@@ -77,13 +77,13 @@ See [AGENTS.md](AGENTS.md) for TDD, Inertia/Svelte, flash/CSRF, and generator co
 
 ## Environment variables
 
-| Variable  | Default         | Description      |
-| --------- | --------------- | ---------------- |
-| PORT          | :8080           | Server port      |
-| DB_PATH       | ./data/app.db   | SQLite file path |
-| ENV           | development     | Environment      |
-| GITHUB_TOKEN  | (empty)         | Optional PAT. Raises rate limit and unlocks traffic snapshots for repos you can push to. |
-| CSP_IMG_SRC   | GitHub avatars  | Required for profile/org images |
+| Variable     | Default        | Description                                                                              |
+| ------------ | -------------- | ---------------------------------------------------------------------------------------- |
+| PORT         | :8080          | Server port                                                                              |
+| DB_PATH      | ./data/app.db  | SQLite file path                                                                         |
+| ENV          | development    | Environment                                                                              |
+| GITHUB_TOKEN | (empty)        | Optional PAT. Raises rate limit and unlocks traffic snapshots for repos you can push to. |
+| CSP_IMG_SRC  | GitHub avatars | Required for profile/org images                                                          |
 
 Health check: GET /health → {"status":"ok"}
 

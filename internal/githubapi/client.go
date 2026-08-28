@@ -24,6 +24,7 @@ type Client struct {
 	baseURL    string
 	token      string
 	httpClient *http.Client
+	me         *User
 }
 
 func New(baseURL, token string) *Client {
@@ -43,11 +44,16 @@ func (c *Client) HasToken() bool {
 }
 
 func (c *Client) Me(ctx context.Context) (User, error) {
+	if c.me != nil {
+		return *c.me, nil
+	}
 	var raw ghUser
 	if err := c.get(ctx, "/user", &raw); err != nil {
 		return User{}, err
 	}
-	return raw.toUser(), nil
+	user := raw.toUser()
+	c.me = &user
+	return user, nil
 }
 
 func (c *Client) User(ctx context.Context, login string) (User, error) {
@@ -59,19 +65,26 @@ func (c *Client) User(ctx context.Context, login string) (User, error) {
 }
 
 func (c *Client) UserRepos(ctx context.Context, login string) ([]Repo, error) {
+	if c.isSelf(ctx, login) {
+		return c.pagedRepos(ctx, "/user/repos?affiliation=owner")
+	}
 	return c.pagedRepos(ctx, "/users/"+url.PathEscape(login)+"/repos")
 }
 
 func (c *Client) UserOrgs(ctx context.Context, login string) ([]Org, error) {
-	var raw []ghOrg
-	if err := c.get(ctx, "/users/"+url.PathEscape(login)+"/orgs?per_page=100", &raw); err != nil {
-		return nil, err
+	path := "/users/" + url.PathEscape(login) + "/orgs"
+	if c.isSelf(ctx, login) {
+		path = "/user/orgs"
 	}
-	orgs := make([]Org, 0, len(raw))
-	for _, item := range raw {
-		orgs = append(orgs, item.toOrg())
+	return c.pagedOrgs(ctx, path)
+}
+
+func (c *Client) isSelf(ctx context.Context, login string) bool {
+	if !c.HasToken() {
+		return false
 	}
-	return orgs, nil
+	me, err := c.Me(ctx)
+	return err == nil && strings.EqualFold(me.Login, login)
 }
 
 func (c *Client) OrgRepos(ctx context.Context, org string) ([]Repo, error) {
@@ -100,8 +113,8 @@ func (c *Client) Traffic(ctx context.Context, owner, repo string) (Traffic, erro
 
 func (c *Client) pagedRepos(ctx context.Context, path string) ([]Repo, error) {
 	var out []Repo
-	next := path + "?per_page=100&sort=updated&page=1"
-	for page := 1; page <= 5 && next != ""; page++ {
+	next := firstPage(path)
+	for page := 1; page <= 10 && next != ""; page++ {
 		var raw []ghRepo
 		link, err := c.getWithLink(ctx, next, &raw)
 		if err != nil {
@@ -113,6 +126,34 @@ func (c *Client) pagedRepos(ctx context.Context, path string) ([]Repo, error) {
 		next = nextPage(link)
 	}
 	return out, nil
+}
+
+func (c *Client) pagedOrgs(ctx context.Context, path string) ([]Org, error) {
+	var out []Org
+	next := firstPage(path)
+	for page := 1; page <= 10 && next != ""; page++ {
+		var raw []ghOrg
+		link, err := c.getWithLink(ctx, next, &raw)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range raw {
+			out = append(out, item.toOrg())
+		}
+		next = nextPage(link)
+	}
+	return out, nil
+}
+
+func firstPage(path string) string {
+	sep := "?"
+	if strings.Contains(path, "?") {
+		sep = "&"
+	}
+	if strings.Contains(path, "per_page=") {
+		return path
+	}
+	return path + sep + "per_page=100&sort=updated&page=1"
 }
 
 func (c *Client) get(ctx context.Context, path string, dest any) error {
@@ -139,7 +180,7 @@ func (c *Client) getWithLink(ctx context.Context, path string, dest any) (string
 	if err != nil {
 		return "", fmt.Errorf("github %s: %w", path, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	body, err := io.ReadAll(io.LimitReader(res.Body, 8<<20))
 	if err != nil {
 		return "", fmt.Errorf("github read %s: %w", path, err)

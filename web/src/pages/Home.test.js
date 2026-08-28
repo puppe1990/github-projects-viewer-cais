@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/svelte";
+import { router } from "@inertiajs/svelte";
 import { describe, expect, test, vi } from "vitest";
 import Home from "./Home.svelte";
 
@@ -47,5 +48,31 @@ describe("Home", () => {
     expect(within(dialog).getAllByRole("button", { name: "Traffic" }).length).toBeGreaterThan(0);
     expect(within(dialog).getAllByRole("button", { name: "Unique visitors" }).length).toBeGreaterThan(0);
     expect(within(dialog).getAllByRole("button", { name: "Clones" }).length).toBeGreaterThan(0);
+  });
+
+  test("shows an All catalog chip that opens the combined catalog", async () => {
+    render(Home, {
+      props: {
+        populated: true,
+        lookup: "puppe1990",
+        profile: { login: "puppe1990", name: "Matheus", html_url: "https://github.com/puppe1990", avatar_url: "https://example.com/a.png", public_repos: 8, followers: 1, following: 1 },
+        orgs: [
+          { login: "hidden-org", avatar_url: "https://example.com/h.png" },
+          { login: "purchasestore", avatar_url: "https://example.com/p.png" },
+        ],
+        source: { type: "all", login: "puppe1990" },
+        repos: [
+          { name: "cais", html_url: "https://github.com/puppe1990/cais", stargazers_count: 1, forks_count: 0, language: "Go", description: "demo", updated_at: "2026-08-01T00:00:00Z" },
+          { name: "private-app", html_url: "https://github.com/hidden-org/private-app", stargazers_count: 0, forks_count: 0, language: "Go", description: "org", updated_at: "2026-08-01T00:00:00Z" },
+        ],
+        error: "",
+      },
+    });
+    const allChip = screen.getByRole("button", { name: /^All\b/ });
+    expect(allChip).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "hidden-org" })).toBeInTheDocument();
+    expect(screen.getByText(/across personal and orgs/)).toBeInTheDocument();
+    await fireEvent.click(allChip);
+    expect(router.get).toHaveBeenCalledWith("/u/puppe1990/all", {}, expect.any(Object));
   });
 });

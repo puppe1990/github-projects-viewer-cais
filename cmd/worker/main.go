@@ -19,6 +19,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	queues := flag.String("queues", "default", "comma-separated queue names")
 	concurrency := flag.Int("concurrency", 2, "worker goroutines")
 	flag.Parse()
@@ -26,12 +32,12 @@ func main() {
 	cfg := cais.Load()
 	s, err := store.NewSQLiteStore(cfg.DBPath, cfg.Env)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer func() { _ = s.Close() }()
 
 	if err := caisjobs.EnsureSchema(s.DB()); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	gh := githubapi.New("", os.Getenv("GITHUB_TOKEN"))
@@ -50,8 +56,9 @@ func main() {
 	})
 	log.Printf("=> Worker started (queues=%s, concurrency=%d)", *queues, *concurrency)
 	if err := worker.Run(ctx); err != nil && err != context.Canceled {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
 func splitQueues(raw string) []string {

@@ -28,7 +28,7 @@ func (h *HomeHandler) Index(w http.ResponseWriter, r *http.Request) {
 	if h.loader != nil && h.loader.GitHub != nil && h.loader.GitHub.HasToken() {
 		me, err := h.loader.GitHub.Me(r.Context())
 		if err == nil && me.Login != "" {
-			http.Redirect(w, r, "/u/"+me.Login, http.StatusSeeOther)
+			http.Redirect(w, r, "/u/"+me.Login+"/all", http.StatusSeeOther)
 			return
 		}
 	}
@@ -42,6 +42,20 @@ func (h *HomeHandler) Show(w http.ResponseWriter, r *http.Request, login string)
 		return
 	}
 	snap, err := h.loader.User(r.Context(), login)
+	if err != nil {
+		h.render(w, r, catalog.Snapshot{}, login, catalogError(err), false)
+		return
+	}
+	h.render(w, r, snap, login, "", true)
+}
+
+func (h *HomeHandler) ShowAll(w http.ResponseWriter, r *http.Request, login string) {
+	login = normalizeLogin(login)
+	if login == "" {
+		h.render(w, r, catalog.Snapshot{}, "", "Type a GitHub username to open their catalog.", false)
+		return
+	}
+	snap, err := h.loader.All(r.Context(), login)
 	if err != nil {
 		h.render(w, r, catalog.Snapshot{}, login, catalogError(err), false)
 		return

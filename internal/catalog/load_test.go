@@ -134,13 +134,11 @@ func testLoader(t *testing.T, gh *fakeGitHub, q *fakeQueue) (*Loader, *memCache)
 
 func TestLoader_User_FetchesAndCaches(t *testing.T) {
 	gh := &fakeGitHub{
-		token: true,
 		user:  githubapi.User{Login: "octocat", Name: "The Octocat", PublicRepos: 8},
 		repos: []githubapi.Repo{{Name: "hello-world", OwnerLogin: "octocat", Stars: 10}},
 		orgs:  []githubapi.Org{{Login: "github"}},
 	}
-	q := &fakeQueue{}
-	loader, _ := testLoader(t, gh, q)
+	loader, _ := testLoader(t, gh, &fakeQueue{})
 
 	snap, err := loader.User(context.Background(), "octocat")
 	if err != nil {
@@ -151,9 +149,6 @@ func TestLoader_User_FetchesAndCaches(t *testing.T) {
 	}
 	if snap.Source != SourceUser || snap.SourceLogin != "octocat" {
 		t.Fatalf("source = %s %s", snap.Source, snap.SourceLogin)
-	}
-	if len(q.traffic) != 1 || q.traffic[0] != "octocat" {
-		t.Fatalf("queue = %#v", q.traffic)
 	}
 
 	gh.users = 0
@@ -257,6 +252,52 @@ func TestLoader_SnapshotTraffic_Persists(t *testing.T) {
 	got, ok, err := s.LoadTraffic("octocat", "hello-world")
 	if err != nil || !ok || got.Views != 5 || got.Clones != 2 {
 		t.Fatalf("ok=%v err=%v got=%+v", ok, err, got)
+	}
+}
+
+func TestLoader_User_SkipsCacheWhenAuthenticatedSelf(t *testing.T) {
+	gh := &fakeGitHub{
+		token: true,
+		user:  githubapi.User{Login: "puppe1990", Name: "Matheus"},
+		repos: []githubapi.Repo{{Name: "cais", OwnerLogin: "puppe1990"}},
+		orgs:  []githubapi.Org{{Login: "purchasestore"}},
+	}
+	loader, _ := testLoader(t, gh, &fakeQueue{})
+	if _, err := loader.User(context.Background(), "puppe1990"); err != nil {
+		t.Fatal(err)
+	}
+	gh.orgs = []githubapi.Org{{Login: "purchasestore"}, {Login: "hidden-org"}}
+	gh.users = 0
+	snap, err := loader.User(context.Background(), "puppe1990")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gh.users != 1 {
+		t.Fatalf("users = %d, want refetch for authenticated self", gh.users)
+	}
+	if len(snap.Orgs) != 2 {
+		t.Fatalf("orgs = %+v", snap.Orgs)
+	}
+}
+
+func TestLoader_All_CombinesPersonalAndOrgRepos(t *testing.T) {
+	gh := &fakeGitHub{
+		token:    true,
+		user:     githubapi.User{Login: "puppe1990", Name: "Matheus"},
+		repos:    []githubapi.Repo{{Name: "cais", FullName: "puppe1990/cais", OwnerLogin: "puppe1990"}},
+		orgs:     []githubapi.Org{{Login: "hidden-org"}},
+		orgRepos: []githubapi.Repo{{Name: "private-app", FullName: "hidden-org/private-app", OwnerLogin: "hidden-org", Private: true}},
+	}
+	loader, _ := testLoader(t, gh, &fakeQueue{})
+	snap, err := loader.All(context.Background(), "puppe1990")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.Source != SourceAll {
+		t.Fatalf("source = %s", snap.Source)
+	}
+	if len(snap.Repos) != 2 {
+		t.Fatalf("repos = %+v", snap.Repos)
 	}
 }
 

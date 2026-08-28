@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,14 +33,24 @@ func (l *Loader) freshFor() time.Duration {
 	return 30 * time.Minute
 }
 
+func (l *Loader) viewingSelf(ctx context.Context, login string) bool {
+	if l.GitHub == nil || !l.GitHub.HasToken() {
+		return false
+	}
+	me, err := l.GitHub.Me(ctx)
+	return err == nil && strings.EqualFold(me.Login, login)
+}
+
 func (l *Loader) User(ctx context.Context, login string) (Snapshot, error) {
 	if err := l.Cache.TouchWatch(login); err != nil {
 		return Snapshot{}, err
 	}
-	if snap, ok, err := l.cachedUser(login); err != nil {
-		return Snapshot{}, err
-	} else if ok {
-		return l.withTraffic(ctx, login, snap)
+	if !l.viewingSelf(ctx, login) {
+		if snap, ok, err := l.cachedUser(login); err != nil {
+			return Snapshot{}, err
+		} else if ok {
+			return l.withTraffic(ctx, login, snap)
+		}
 	}
 
 	snap, err := l.fetchUser(ctx, login)
@@ -55,6 +66,64 @@ func (l *Loader) User(ctx context.Context, login string) (Snapshot, error) {
 		return snap, nil
 	}
 	return Snapshot{}, err
+}
+
+func (l *Loader) All(ctx context.Context, login string) (Snapshot, error) {
+	userSnap, err := l.User(ctx, login)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	combined := append([]Repo{}, userSnap.Repos...)
+	seen := make(map[string]bool, len(combined))
+	for _, repo := range combined {
+		key := repo.FullName
+		if key == "" {
+			key = repo.OwnerLogin + "/" + repo.Name
+		}
+		seen[key] = true
+	}
+	for _, org := range userSnap.Orgs {
+		raw, orgErr := l.GitHub.OrgRepos(ctx, org.Login)
+		if orgErr != nil {
+			cached, cacheErr := l.Cache.LoadRepos(org.Login, SourceOrg)
+			if cacheErr != nil || len(cached) == 0 {
+				continue
+			}
+			for _, repo := range cached {
+				key := repo.FullName
+				if key == "" {
+					key = repo.OwnerLogin + "/" + repo.Name
+				}
+				if seen[key] {
+					continue
+				}
+				seen[key] = true
+				combined = append(combined, repo)
+			}
+			continue
+		}
+		mapped := ReposFromGitHub(raw)
+		_ = l.Cache.SaveRepos(org.Login, SourceOrg, mapped, l.now())
+		for _, repo := range mapped {
+			key := repo.FullName
+			if key == "" {
+				key = repo.OwnerLogin + "/" + repo.Name
+			}
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			combined = append(combined, repo)
+		}
+	}
+	snap := Snapshot{
+		Profile:     userSnap.Profile,
+		Orgs:        userSnap.Orgs,
+		Repos:       combined,
+		Source:      SourceAll,
+		SourceLogin: login,
+	}
+	return l.withTraffic(ctx, login, snap)
 }
 
 func (l *Loader) Org(ctx context.Context, userLogin, orgLogin string) (Snapshot, error) {

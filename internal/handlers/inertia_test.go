@@ -48,24 +48,6 @@ func assertInertiaComponent(t *testing.T, rr *httptest.ResponseRecorder, want st
 	}
 }
 
-func assertInertiaErrors(t *testing.T, rr *httptest.ResponseRecorder, keys ...string) {
-	t.Helper()
-	payload := parseInertiaJSON(t, rr)
-	props, ok := payload["props"].(map[string]any)
-	if !ok {
-		t.Fatalf("missing props: %v", payload)
-	}
-	errors, ok := props["errors"].(map[string]any)
-	if !ok || len(errors) == 0 {
-		t.Fatalf("missing errors in props: %v", props)
-	}
-	for _, k := range keys {
-		if _, ok := errors[k]; !ok {
-			t.Errorf("errors missing key %q: %v", k, errors)
-		}
-	}
-}
-
 func assertInertiaProp(t *testing.T, rr *httptest.ResponseRecorder, key string) any {
 	t.Helper()
 	payload := parseInertiaJSON(t, rr)

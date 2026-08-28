@@ -84,7 +84,7 @@ func (s *SQLiteStore) SaveRepos(owner, source string, repos []catalog.Repo, fetc
 	if err != nil {
 		return fmt.Errorf("prepare repos: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 	stamp := fetchedAt.UTC().Format(time.RFC3339)
 	for _, repo := range repos {
 		payload, err := json.Marshal(repo)
@@ -109,7 +109,7 @@ func (s *SQLiteStore) LoadRepos(owner, source string) ([]catalog.Repo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load repos: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var repos []catalog.Repo
 	for rows.Next() {
 		var payload string
@@ -139,7 +139,7 @@ func (s *SQLiteStore) SaveOrgs(userLogin string, orgs []catalog.Org) error {
 	if err != nil {
 		return fmt.Errorf("prepare orgs: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 	for _, org := range orgs {
 		payload, err := json.Marshal(org)
 		if err != nil {
@@ -160,7 +160,7 @@ func (s *SQLiteStore) LoadOrgs(userLogin string) ([]catalog.Org, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load orgs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var orgs []catalog.Org
 	for rows.Next() {
 		var payload string
@@ -249,7 +249,7 @@ func (s *SQLiteStore) WatchedLogins() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("watched logins: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var logins []string
 	for rows.Next() {
 		var login string
@@ -266,7 +266,7 @@ func (s *SQLiteStore) CachedRepoRefs() ([]catalog.RepoRef, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cached repo refs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var refs []catalog.RepoRef
 	for rows.Next() {
 		var ref catalog.RepoRef

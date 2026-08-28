@@ -85,6 +85,71 @@ func TestClient_SendsBearerToken(t *testing.T) {
 	_, _ = New(srv.URL, "secret").User(context.Background(), "x")
 }
 
+func TestClient_UserRepos_UsesAuthenticatedOwnerPath(t *testing.T) {
+	var sawUserRepos, sawPublicRepos bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/user":
+			_ = json.NewEncoder(w).Encode(map[string]any{"login": "puppe1990"})
+		case r.URL.Path == "/user/repos":
+			sawUserRepos = true
+			if r.URL.Query().Get("affiliation") != "owner" {
+				t.Errorf("affiliation = %s", r.URL.Query().Get("affiliation"))
+			}
+			_ = json.NewEncoder(w).Encode([]map[string]any{
+				{"name": "secret", "private": true, "owner": map[string]any{"login": "puppe1990"}, "stargazers_count": 0},
+			})
+		case strings.HasPrefix(r.URL.Path, "/users/"):
+			sawPublicRepos = true
+			_ = json.NewEncoder(w).Encode([]any{})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	repos, err := New(srv.URL, "tok").UserRepos(context.Background(), "puppe1990")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !sawUserRepos || sawPublicRepos {
+		t.Fatalf("authenticated=%v public=%v", sawUserRepos, sawPublicRepos)
+	}
+	if len(repos) != 1 || !repos[0].Private {
+		t.Fatalf("repos = %+v", repos)
+	}
+}
+
+func TestClient_UserOrgs_UsesAuthenticatedOrgs(t *testing.T) {
+	var sawUserOrgs, sawPublicOrgs bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/user":
+			_ = json.NewEncoder(w).Encode(map[string]any{"login": "puppe1990"})
+		case "/user/orgs":
+			sawUserOrgs = true
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"login": "hidden-org", "avatar_url": "https://example.com/o.png"}})
+		case "/users/puppe1990/orgs":
+			sawPublicOrgs = true
+			_ = json.NewEncoder(w).Encode([]any{})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	orgs, err := New(srv.URL, "tok").UserOrgs(context.Background(), "puppe1990")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !sawUserOrgs || sawPublicOrgs {
+		t.Fatalf("authenticated=%v public=%v", sawUserOrgs, sawPublicOrgs)
+	}
+	if len(orgs) != 1 || orgs[0].Login != "hidden-org" {
+		t.Fatalf("orgs = %+v", orgs)
+	}
+}
+
 func TestClient_UserRepos_Paginates(t *testing.T) {
 	var srv *httptest.Server
 	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

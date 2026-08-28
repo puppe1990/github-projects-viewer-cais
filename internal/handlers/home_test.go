@@ -71,7 +71,7 @@ func TestHomeHandler_IndexRedirectsToAuthenticatedUser(t *testing.T) {
 	if rr.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d, want %d", rr.Code, http.StatusSeeOther)
 	}
-	if loc := rr.Header().Get("Location"); loc != "/u/puppe1990" {
+	if loc := rr.Header().Get("Location"); loc != "/u/puppe1990/all" {
 		t.Fatalf("Location = %q", loc)
 	}
 }
@@ -124,6 +124,26 @@ func TestHomeHandler_ShowNotFound(t *testing.T) {
 	}
 	if assertInertiaProp(t, rr, "populated") != false {
 		t.Fatal("populated should be false")
+	}
+}
+
+func TestHomeHandler_ShowAll(t *testing.T) {
+	h := newHomeHandler(t, homeGitHub{
+		token:    true,
+		user:     githubapi.User{Login: "puppe1990", Name: "Matheus"},
+		repos:    []githubapi.Repo{{Name: "cais", FullName: "puppe1990/cais", OwnerLogin: "puppe1990"}},
+		orgs:     []githubapi.Org{{Login: "hidden-org"}},
+		orgRepos: []githubapi.Repo{{Name: "private-app", FullName: "hidden-org/private-app", OwnerLogin: "hidden-org", Private: true}},
+	})
+	rr := httptest.NewRecorder()
+	h.ShowAll(rr, inertiaRequest(http.MethodGet, "/u/puppe1990/all", nil), "puppe1990")
+	source := assertInertiaProp(t, rr, "source").(map[string]any)
+	if source["type"] != catalog.SourceAll {
+		t.Fatalf("source = %#v", source)
+	}
+	repos := assertInertiaProp(t, rr, "repos").([]any)
+	if len(repos) != 2 {
+		t.Fatalf("repos = %#v", repos)
 	}
 }
 

@@ -44,8 +44,9 @@
     </span>
   </div>
   <h2><a href={repo.html_url} target="_blank" rel="noopener noreferrer">{repo.name}</a></h2>
-  {#if repo.fork || repo.archived}
+  {#if repo.fork || repo.archived || repo.private}
     <div class="badges">
+      {#if repo.private}<span class="badge private">Private</span>{/if}
       {#if repo.fork}<span class="badge fork">Fork</span>{/if}
       {#if repo.archived}<span class="badge archived">Archived</span>{/if}
     </div>

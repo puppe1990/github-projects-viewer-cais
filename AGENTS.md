@@ -14,30 +14,30 @@ Before writing production code:
 
 ## Clean code for agents
 
-| Priority | Rule |
-| -------- | ---- |
-| 1 | **Small units** — functions ~4–20 lines; files target 200–300 lines, hard cap ~500 |
-| 2 | **SRP** — one reason to change per file/package |
-| 3 | **Greppable names** — unique domain nouns; avoid `data`, `handler`, `Manager`, `util` as primary names |
-| 4 | **Comments = WHY** — security, SQLite, CSRF/cookie, Inertia JSON vs form. No narrating WHAT |
-| 5 | **Inject deps** — handlers take `Store`, Inertia, `cais.Config` via constructor |
-| 6 | **Early returns** — max ~2 nesting levels |
-| 7 | **Errors with values** — `fmt.Errorf("...: %w", err)` |
-| 8 | **Headless tests** — SQLite `:memory:`; no manual seed for unit tests |
+| Priority | Rule                                                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------ |
+| 1        | **Small units** — functions ~4–20 lines; files target 200–300 lines, hard cap ~500                     |
+| 2        | **SRP** — one reason to change per file/package                                                        |
+| 3        | **Greppable names** — unique domain nouns; avoid `data`, `handler`, `Manager`, `util` as primary names |
+| 4        | **Comments = WHY** — security, SQLite, CSRF/cookie, Inertia JSON vs form. No narrating WHAT            |
+| 5        | **Inject deps** — handlers take `Store`, Inertia, `cais.Config` via constructor                        |
+| 6        | **Early returns** — max ~2 nesting levels                                                              |
+| 7        | **Errors with values** — `fmt.Errorf("...: %w", err)`                                                  |
+| 8        | **Headless tests** — SQLite `:memory:`; no manual seed for unit tests                                  |
 
 ## Layout
 
-| Path | Responsibility |
-| ---- | -------------- |
-| `cmd/server/` | Entry point |
-| `internal/app/` | Bootstrap, `registerRoutes` |
-| `internal/handlers/` | HTTP handlers (Inertia + Svelte) |
-| `internal/store/` | SQLite + migrations |
-| `internal/models/` | Domain structs |
-| `web/templates/app.html` | Inertia root shell |
-| `web/src/pages/` | Svelte pages |
-| `web/src/components/` | Shared Svelte components |
-| `web/static/` | CSS, Vite build, PWA |
+| Path                     | Responsibility                   |
+| ------------------------ | -------------------------------- |
+| `cmd/server/`            | Entry point                      |
+| `internal/app/`          | Bootstrap, `registerRoutes`      |
+| `internal/handlers/`     | HTTP handlers (Inertia + Svelte) |
+| `internal/store/`        | SQLite + migrations              |
+| `internal/models/`       | Domain structs                   |
+| `web/templates/app.html` | Inertia root shell               |
+| `web/src/pages/`         | Svelte pages                     |
+| `web/src/components/`    | Shared Svelte components         |
+| `web/static/`            | CSS, Vite build, PWA             |
 
 Patch markers (do not remove): `registerRoutes`, `Close() error`, `<!-- cais:nav -->`.
 

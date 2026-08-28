@@ -32,4 +32,9 @@ describe("RepoCard", () => {
     expect(within(dialog).getByText("17")).toBeInTheDocument();
     expect(within(dialog).getByText("342")).toBeInTheDocument();
   });
+
+  test("shows a Private badge on private repositories", () => {
+    render(RepoCard, { props: { repo: { ...repo, private: true, traffic: {} }, index: 0 } });
+    expect(screen.getByText("Private")).toBeInTheDocument();
+  });
 });

@@ -59,6 +59,10 @@
       go(`/u/${encodeURIComponent(profile.login)}/orgs/${encodeURIComponent(login)}`);
       return;
     }
+    if (type === "all") {
+      go(`/u/${encodeURIComponent(profile.login)}/all`);
+      return;
+    }
     go(`/u/${encodeURIComponent(profile.login)}`);
   }
 
@@ -67,6 +71,7 @@
     const shown = formatCount(visible.length);
     const loaded = formatCount((repos || []).length);
     if (source?.type === "org") return `${shown} of ${loaded} in ${source.login}`;
+    if (source?.type === "all") return `${shown} of ${loaded} across personal and orgs`;
     const publicCount = profile?.public_repos;
     if (publicCount && publicCount > (repos || []).length) {
       return `${shown} of ${loaded} loaded · ${formatCount(publicCount)} public`;
@@ -141,6 +146,11 @@
     <section id="catalog-nav" class="catalog-nav">
       <p class="catalog-kicker">Catalog</p>
       <div id="catalog-sources" class="catalog-sources">
+        <button type="button" class="org-chip" class:is-active={source?.type === "all"} aria-pressed={source?.type === "all"} on:click={() => selectSource("all", profile.login)}>
+          <span class="org-chip-mark" aria-hidden="true"></span>
+          <span>All</span>
+          {#if source?.type === "all"}<span class="org-chip-count">{formatCount(repos.length)}</span>{/if}
+        </button>
         <button type="button" class="org-chip" class:is-active={source?.type === "user"} aria-pressed={source?.type === "user"} on:click={() => selectSource("user", profile.login)}>
           <img src={profile.avatar_url} alt="" width="22" height="22">
           <span>Personal</span>
@@ -228,6 +238,8 @@
         <div class="empty">
           {#if source?.type === "org"}
             <strong>Nothing in {source.login} matches.</strong>Loosen language, stars, or the homepage toggle.
+          {:else if source?.type === "all"}
+            <strong>Nothing across personal and orgs matches.</strong>Loosen language, stars, or the homepage toggle.
           {:else}
             <strong>Nothing matches these filters.</strong>Loosen language, stars, or the homepage toggle.
           {/if}

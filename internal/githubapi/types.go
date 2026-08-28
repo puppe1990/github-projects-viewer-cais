@@ -27,6 +27,7 @@ type Repo struct {
 	Forks       int    `json:"forks_count"`
 	Fork        bool   `json:"fork"`
 	Archived    bool   `json:"archived"`
+	Private     bool   `json:"private"`
 }
 
 type Org struct {
@@ -66,19 +67,7 @@ type ghUser struct {
 }
 
 func (u ghUser) toUser() User {
-	return User{
-		Login:       u.Login,
-		Name:        u.Name,
-		Bio:         u.Bio,
-		AvatarURL:   u.AvatarURL,
-		HTMLURL:     u.HTMLURL,
-		Location:    u.Location,
-		Company:     u.Company,
-		Blog:        u.Blog,
-		PublicRepos: u.PublicRepos,
-		Followers:   u.Followers,
-		Following:   u.Following,
-	}
+	return User(u)
 }
 
 type ghRepo struct {
@@ -93,6 +82,7 @@ type ghRepo struct {
 	Forks       int    `json:"forks_count"`
 	Fork        bool   `json:"fork"`
 	Archived    bool   `json:"archived"`
+	Private     bool   `json:"private"`
 	Owner       struct {
 		Login string `json:"login"`
 	} `json:"owner"`
@@ -112,6 +102,7 @@ func (r ghRepo) toRepo() Repo {
 		Forks:       r.Forks,
 		Fork:        r.Fork,
 		Archived:    r.Archived,
+		Private:     r.Private,
 	}
 }
 
@@ -122,7 +113,7 @@ type ghOrg struct {
 }
 
 func (o ghOrg) toOrg() Org {
-	return Org{Login: o.Login, AvatarURL: o.AvatarURL, Description: o.Description}
+	return Org(o)
 }
 
 type ghTraffic struct {

@@ -20,6 +20,7 @@ type Repo struct {
 	Forks       int     `json:"forks_count"`
 	Fork        bool    `json:"fork"`
 	Archived    bool    `json:"archived"`
+	Private     bool    `json:"private"`
 	Traffic     Traffic `json:"traffic"`
 }
 
@@ -39,6 +40,7 @@ type Snapshot struct {
 const (
 	SourceUser = "user"
 	SourceOrg  = "org"
+	SourceAll  = "all"
 )
 
 func ReposFromGitHub(in []githubapi.Repo) []Repo {
@@ -57,6 +59,7 @@ func ReposFromGitHub(in []githubapi.Repo) []Repo {
 			Forks:       r.Forks,
 			Fork:        r.Fork,
 			Archived:    r.Archived,
+			Private:     r.Private,
 		}
 	}
 	return out
