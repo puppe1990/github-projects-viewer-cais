@@ -1,0 +1,99 @@
+package jobs
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/puppe1990/github-projects-viewer-cais/internal/catalog"
+	"github.com/puppe1990/github-projects-viewer-cais/internal/githubapi"
+	"github.com/puppe1990/github-projects-viewer-cais/internal/store"
+)
+
+type stubGitHub struct {
+	traffic    githubapi.Traffic
+	trafficErr error
+	user       githubapi.User
+	repos      []githubapi.Repo
+}
+
+func (s stubGitHub) HasToken() bool { return true }
+func (s stubGitHub) Me(context.Context) (githubapi.User, error) {
+	return s.user, nil
+}
+func (s stubGitHub) User(context.Context, string) (githubapi.User, error) {
+	return s.user, nil
+}
+func (s stubGitHub) UserRepos(context.Context, string) ([]githubapi.Repo, error) {
+	return s.repos, nil
+}
+func (s stubGitHub) UserOrgs(context.Context, string) ([]githubapi.Org, error) {
+	return nil, nil
+}
+func (s stubGitHub) OrgRepos(context.Context, string) ([]githubapi.Repo, error) {
+	return nil, nil
+}
+func (s stubGitHub) Traffic(context.Context, string, string) (githubapi.Traffic, error) {
+	return s.traffic, s.trafficErr
+}
+
+func testJobLoader(t *testing.T, gh catalog.GitHub) (*catalog.Loader, store.Store) {
+	t.Helper()
+	s, err := store.NewSQLiteStore(":memory:", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	return &catalog.Loader{
+		GitHub:   gh,
+		Cache:    s,
+		Now:      func() time.Time { return time.Date(2026, 8, 28, 12, 0, 0, 0, time.UTC) },
+		FreshFor: time.Hour,
+	}, s
+}
+
+func TestPerformSnapshotTraffic_SavesWindow(t *testing.T) {
+	loader, s := testJobLoader(t, stubGitHub{
+		traffic: githubapi.Traffic{Views: 42, Clones: 7, Available: true},
+	})
+	h := PerformSnapshotTraffic(loader)
+	if err := h(context.Background(), []byte(`{"owner":"octocat","repo":"hello-world"}`)); err != nil {
+		t.Fatal(err)
+	}
+	got, ok, err := s.LoadTraffic("octocat", "hello-world")
+	if err != nil || !ok || got.Views != 42 {
+		t.Fatalf("ok=%v err=%v got=%+v", ok, err, got)
+	}
+}
+
+func TestPerformSnapshotTraffic_LoginUsesCachedRepos(t *testing.T) {
+	loader, s := testJobLoader(t, stubGitHub{
+		traffic: githubapi.Traffic{Views: 3, Available: true},
+	})
+	if err := s.SaveRepos("octocat", catalog.SourceUser, []catalog.Repo{{Name: "hello-world", OwnerLogin: "octocat"}}, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	h := PerformSnapshotTraffic(loader)
+	if err := h(context.Background(), []byte(`{"login":"octocat"}`)); err != nil {
+		t.Fatal(err)
+	}
+	got, ok, err := s.LoadTraffic("octocat", "hello-world")
+	if err != nil || !ok || got.Views != 3 {
+		t.Fatalf("ok=%v err=%v got=%+v", ok, err, got)
+	}
+}
+
+func TestPerformRefreshCatalog_FetchesUser(t *testing.T) {
+	loader, s := testJobLoader(t, stubGitHub{
+		user:  githubapi.User{Login: "octocat", Name: "The Octocat"},
+		repos: []githubapi.Repo{{Name: "hello-world", OwnerLogin: "octocat", Stars: 9}},
+	})
+	h := PerformRefreshCatalog(loader)
+	if err := h(context.Background(), []byte(`{"login":"octocat"}`)); err != nil {
+		t.Fatal(err)
+	}
+	profile, ok, err := s.LoadProfile("octocat")
+	if err != nil || !ok || profile.Name != "The Octocat" {
+		t.Fatalf("ok=%v err=%v profile=%+v", ok, err, profile)
+	}
+}
