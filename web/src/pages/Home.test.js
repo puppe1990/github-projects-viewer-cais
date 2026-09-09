@@ -30,6 +30,23 @@ describe("Home", () => {
     expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
   });
 
+  test("offers unique sorts in the quick dropdown", () => {
+    render(Home, {
+      props: {
+        populated: true,
+        lookup: "octocat",
+        profile: { login: "octocat", name: "The Octocat", html_url: "https://github.com/octocat", avatar_url: "https://example.com/a.png", public_repos: 1, followers: 1, following: 1 },
+        orgs: [],
+        source: { type: "user", login: "octocat" },
+        repos: [{ name: "hello-world", html_url: "https://github.com/octocat/hello-world", stargazers_count: 10, forks_count: 2, language: "Go", description: "demo", updated_at: "2026-08-01T00:00:00Z", traffic: { available: true } }],
+        error: "",
+      },
+    });
+    const sortSelect = screen.getByLabelText("Sort by");
+    expect(within(sortSelect).getByRole("option", { name: "Unique visitors" })).toBeInTheDocument();
+    expect(within(sortSelect).getByRole("option", { name: "Unique cloners" })).toBeInTheDocument();
+  });
+
   test("opens a complete sort dialog with traffic fields", async () => {
     render(Home, {
       props: {

@@ -210,7 +210,9 @@
               <option value="updated">Updated</option>
               <option value="name">Name</option>
               <option value="traffic">Traffic</option>
+              <option value="view_uniques">Unique visitors</option>
               <option value="clones">Clones</option>
+              <option value="clone_uniques">Unique cloners</option>
             </select>
             <select id="sort-order" aria-label="Sort order" bind:value={sortOrder}>
               <option value="desc">Desc</option>
