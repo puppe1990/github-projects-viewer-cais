@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -14,26 +15,29 @@ type stubGitHub struct {
 	traffic    githubapi.Traffic
 	trafficErr error
 	user       githubapi.User
+	userErr    error
 	repos      []githubapi.Repo
+	userCalls  int
 }
 
-func (s stubGitHub) HasToken() bool { return true }
-func (s stubGitHub) Me(context.Context) (githubapi.User, error) {
+func (s *stubGitHub) HasToken() bool { return true }
+func (s *stubGitHub) Me(context.Context) (githubapi.User, error) {
 	return s.user, nil
 }
-func (s stubGitHub) User(context.Context, string) (githubapi.User, error) {
-	return s.user, nil
+func (s *stubGitHub) User(context.Context, string) (githubapi.User, error) {
+	s.userCalls++
+	return s.user, s.userErr
 }
-func (s stubGitHub) UserRepos(context.Context, string) ([]githubapi.Repo, error) {
+func (s *stubGitHub) UserRepos(context.Context, string) ([]githubapi.Repo, error) {
 	return s.repos, nil
 }
-func (s stubGitHub) UserOrgs(context.Context, string) ([]githubapi.Org, error) {
+func (s *stubGitHub) UserOrgs(context.Context, string) ([]githubapi.Org, error) {
 	return nil, nil
 }
-func (s stubGitHub) OrgRepos(context.Context, string) ([]githubapi.Repo, error) {
+func (s *stubGitHub) OrgRepos(context.Context, string) ([]githubapi.Repo, error) {
 	return nil, nil
 }
-func (s stubGitHub) Traffic(context.Context, string, string) (githubapi.Traffic, error) {
+func (s *stubGitHub) Traffic(context.Context, string, string) (githubapi.Traffic, error) {
 	return s.traffic, s.trafficErr
 }
 
@@ -53,7 +57,7 @@ func testJobLoader(t *testing.T, gh catalog.GitHub) (*catalog.Loader, store.Stor
 }
 
 func TestPerformSnapshotTraffic_SavesWindow(t *testing.T) {
-	loader, s := testJobLoader(t, stubGitHub{
+	loader, s := testJobLoader(t, &stubGitHub{
 		traffic: githubapi.Traffic{Views: 42, Clones: 7, Available: true},
 	})
 	h := PerformSnapshotTraffic(loader)
@@ -67,7 +71,7 @@ func TestPerformSnapshotTraffic_SavesWindow(t *testing.T) {
 }
 
 func TestPerformSnapshotTraffic_LoginUsesCachedRepos(t *testing.T) {
-	loader, s := testJobLoader(t, stubGitHub{
+	loader, s := testJobLoader(t, &stubGitHub{
 		traffic: githubapi.Traffic{Views: 3, Available: true},
 	})
 	if err := s.SaveRepos("octocat", catalog.SourceUser, []catalog.Repo{{Name: "hello-world", OwnerLogin: "octocat"}}, time.Now()); err != nil {
@@ -84,7 +88,7 @@ func TestPerformSnapshotTraffic_LoginUsesCachedRepos(t *testing.T) {
 }
 
 func TestPerformSnapshotTraffic_RateLimitedIsSkipped(t *testing.T) {
-	loader, s := testJobLoader(t, stubGitHub{trafficErr: githubapi.ErrRateLimited})
+	loader, s := testJobLoader(t, &stubGitHub{trafficErr: githubapi.ErrRateLimited})
 	if err := s.SaveRepos("octocat", catalog.SourceUser, []catalog.Repo{{Name: "hello-world", OwnerLogin: "octocat"}}, time.Now()); err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +99,7 @@ func TestPerformSnapshotTraffic_RateLimitedIsSkipped(t *testing.T) {
 }
 
 func TestPerformRefreshCatalog_FetchesUser(t *testing.T) {
-	loader, s := testJobLoader(t, stubGitHub{
+	loader, s := testJobLoader(t, &stubGitHub{
 		user:  githubapi.User{Login: "octocat", Name: "The Octocat"},
 		repos: []githubapi.Repo{{Name: "hello-world", OwnerLogin: "octocat", Stars: 9}},
 	})
@@ -106,5 +110,33 @@ func TestPerformRefreshCatalog_FetchesUser(t *testing.T) {
 	profile, ok, err := s.LoadProfile("octocat")
 	if err != nil || !ok || profile.Name != "The Octocat" {
 		t.Fatalf("ok=%v err=%v profile=%+v", ok, err, profile)
+	}
+}
+
+func TestPerformRefreshCatalog_StopsOnFirstError(t *testing.T) {
+	gh := &stubGitHub{userErr: errors.New("github: HTTP 502")}
+	loader, s := testJobLoader(t, gh)
+	for _, login := range []string{"alpha", "beta", "gamma"} {
+		if err := s.TouchWatch(login); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h := PerformRefreshCatalog(loader)
+	if err := h(context.Background(), []byte(`{}`)); err == nil {
+		t.Fatal("expected the fetch error to surface")
+	}
+	if gh.userCalls != 1 {
+		t.Fatalf("user calls = %d, want 1: a failing login must not make the job walk the whole watch list", gh.userCalls)
+	}
+}
+
+func TestPerformRefreshCatalog_RateLimitedIsSkipped(t *testing.T) {
+	loader, s := testJobLoader(t, &stubGitHub{userErr: githubapi.ErrRateLimited})
+	if err := s.TouchWatch("octocat"); err != nil {
+		t.Fatal(err)
+	}
+	h := PerformRefreshCatalog(loader)
+	if err := h(context.Background(), []byte(`{}`)); err != nil {
+		t.Fatalf("rate limit must not fail the job: %v", err)
 	}
 }

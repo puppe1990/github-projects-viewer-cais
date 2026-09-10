@@ -18,18 +18,17 @@ func PerformRefreshCatalog(loader *catalog.Loader) caisjobs.Handler {
 		var p refreshPayload
 		_ = json.Unmarshal(payload, &p)
 		if p.Login != "" {
-			return loader.Refresh(ctx, p.Login)
+			return skipRateLimited(loader.Refresh(ctx, p.Login))
 		}
 		logins, err := loader.Cache.WatchedLogins()
 		if err != nil {
 			return err
 		}
-		var first error
 		for _, login := range logins {
-			if err := loader.Refresh(ctx, login); err != nil && first == nil {
-				first = err
+			if err := skipRateLimited(loader.Refresh(ctx, login)); err != nil {
+				return err
 			}
 		}
-		return first
+		return nil
 	}
 }
