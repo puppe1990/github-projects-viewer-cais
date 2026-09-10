@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ type fakeGitHub struct {
 	trafficErr error
 	token      bool
 	users      int
+	trafficN   int
 }
 
 func (f *fakeGitHub) HasToken() bool { return f.token }
@@ -43,6 +45,7 @@ func (f *fakeGitHub) OrgRepos(context.Context, string) ([]githubapi.Repo, error)
 	return f.orgRepos, nil
 }
 func (f *fakeGitHub) Traffic(context.Context, string, string) (githubapi.Traffic, error) {
+	f.trafficN++
 	return f.traffic, f.trafficErr
 }
 
@@ -252,6 +255,47 @@ func TestLoader_SnapshotTraffic_Persists(t *testing.T) {
 	got, ok, err := s.LoadTraffic("octocat", "hello-world")
 	if err != nil || !ok || got.Views != 5 || got.Clones != 2 {
 		t.Fatalf("ok=%v err=%v got=%+v", ok, err, got)
+	}
+}
+
+func TestLoader_User_DoesNotEnqueueTrafficPerView(t *testing.T) {
+	gh := &fakeGitHub{
+		token:   true,
+		user:    githubapi.User{Login: "puppe1990", Name: "Matheus"},
+		repos:   []githubapi.Repo{{Name: "cais", OwnerLogin: "puppe1990"}},
+		traffic: githubapi.Traffic{Views: 17, Available: true},
+	}
+	q := &fakeQueue{}
+	loader, _ := testLoader(t, gh, q)
+
+	for i := 0; i < 3; i++ {
+		if _, err := loader.User(context.Background(), "puppe1990"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(q.traffic) != 0 {
+		t.Fatalf("page views enqueued %d traffic job(s): %v", len(q.traffic), q.traffic)
+	}
+}
+
+func TestLoader_SnapshotLogin_StopsOnFirstRateLimit(t *testing.T) {
+	gh := &fakeGitHub{trafficErr: githubapi.ErrRateLimited}
+	loader, s := testLoader(t, gh, &fakeQueue{})
+
+	repos := make([]Repo, 0, 25)
+	for i := 0; i < 25; i++ {
+		repos = append(repos, Repo{Name: fmt.Sprintf("repo-%02d", i), OwnerLogin: "puppe1990"})
+	}
+	if err := s.SaveRepos("puppe1990", SourceUser, repos, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+
+	err := loader.SnapshotLogin(context.Background(), "puppe1990")
+	if !errors.Is(err, githubapi.ErrRateLimited) {
+		t.Fatalf("err = %v, want ErrRateLimited", err)
+	}
+	if gh.trafficN != 1 {
+		t.Fatalf("traffic calls = %d, want 1 (stop at the first rate limit)", gh.trafficN)
 	}
 }
 

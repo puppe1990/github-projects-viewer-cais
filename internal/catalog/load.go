@@ -49,13 +49,13 @@ func (l *Loader) User(ctx context.Context, login string) (Snapshot, error) {
 		if snap, ok, err := l.cachedUser(login); err != nil {
 			return Snapshot{}, err
 		} else if ok {
-			return l.withTraffic(ctx, login, snap)
+			return l.withTraffic(ctx, snap)
 		}
 	}
 
 	snap, err := l.fetchUser(ctx, login)
 	if err == nil {
-		return l.withTraffic(ctx, login, snap)
+		return l.withTraffic(ctx, snap)
 	}
 	if errors.Is(err, githubapi.ErrNotFound) {
 		return Snapshot{}, err
@@ -123,7 +123,7 @@ func (l *Loader) All(ctx context.Context, login string) (Snapshot, error) {
 		Source:      SourceAll,
 		SourceLogin: login,
 	}
-	return l.withTraffic(ctx, login, snap)
+	return l.withTraffic(ctx, snap)
 }
 
 func (l *Loader) Org(ctx context.Context, userLogin, orgLogin string) (Snapshot, error) {
@@ -143,7 +143,7 @@ func (l *Loader) Org(ctx context.Context, userLogin, orgLogin string) (Snapshot,
 			if snapErr != nil {
 				return Snapshot{}, snapErr
 			}
-			return l.withTraffic(ctx, orgLogin, snap)
+			return l.withTraffic(ctx, snap)
 		}
 		return Snapshot{}, err
 	}
@@ -155,7 +155,7 @@ func (l *Loader) Org(ctx context.Context, userLogin, orgLogin string) (Snapshot,
 	if err != nil {
 		return Snapshot{}, err
 	}
-	return l.withTraffic(ctx, orgLogin, snap)
+	return l.withTraffic(ctx, snap)
 }
 
 func (l *Loader) Refresh(ctx context.Context, login string) error {
@@ -189,27 +189,23 @@ func (l *Loader) SnapshotLogin(ctx context.Context, login string) error {
 	if err != nil {
 		return err
 	}
-	var first error
 	for _, repo := range repos {
-		if err := l.SnapshotTraffic(ctx, repo.OwnerLogin, repo.Name); err != nil && first == nil {
-			first = err
+		if err := l.SnapshotTraffic(ctx, repo.OwnerLogin, repo.Name); err != nil {
+			return err
 		}
 	}
 	for _, org := range orgs {
 		orgRepos, err := l.Cache.LoadRepos(org.Login, SourceOrg)
 		if err != nil {
-			if first == nil {
-				first = err
-			}
-			continue
+			return err
 		}
 		for _, repo := range orgRepos {
-			if err := l.SnapshotTraffic(ctx, repo.OwnerLogin, repo.Name); err != nil && first == nil {
-				first = err
+			if err := l.SnapshotTraffic(ctx, repo.OwnerLogin, repo.Name); err != nil {
+				return err
 			}
 		}
 	}
-	return first
+	return nil
 }
 
 func (l *Loader) fetchUser(ctx context.Context, login string) (Snapshot, error) {
@@ -295,13 +291,14 @@ func (l *Loader) orgSnapshot(userSnap Snapshot, orgLogin string, repos []Repo) (
 	}, nil
 }
 
-func (l *Loader) withTraffic(ctx context.Context, login string, snap Snapshot) (Snapshot, error) {
+// withTraffic refreshes traffic only for repos that have no snapshot yet.
+// Refreshing cached repos is the hourly SnapshotTraffic cron's job: enqueueing
+// it per request snapshots every cached repo (two API calls each) and burns the
+// whole GitHub token budget within a handful of page views.
+func (l *Loader) withTraffic(ctx context.Context, snap Snapshot) (Snapshot, error) {
 	if l.GitHub.HasToken() {
 		if err := l.fillMissingTraffic(ctx, snap.Repos); err != nil {
 			return Snapshot{}, err
-		}
-		if l.Queue != nil {
-			_ = l.Queue.EnqueueTraffic(login)
 		}
 	}
 	repos, err := l.attachTraffic(snap.Repos)
