@@ -83,6 +83,17 @@ func TestPerformSnapshotTraffic_LoginUsesCachedRepos(t *testing.T) {
 	}
 }
 
+func TestPerformSnapshotTraffic_RateLimitedIsSkipped(t *testing.T) {
+	loader, s := testJobLoader(t, stubGitHub{trafficErr: githubapi.ErrRateLimited})
+	if err := s.SaveRepos("octocat", catalog.SourceUser, []catalog.Repo{{Name: "hello-world", OwnerLogin: "octocat"}}, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	h := PerformSnapshotTraffic(loader)
+	if err := h(context.Background(), []byte(`{"login":"octocat"}`)); err != nil {
+		t.Fatalf("rate limit must not fail the job: %v", err)
+	}
+}
+
 func TestPerformRefreshCatalog_FetchesUser(t *testing.T) {
 	loader, s := testJobLoader(t, stubGitHub{
 		user:  githubapi.User{Login: "octocat", Name: "The Octocat"},
