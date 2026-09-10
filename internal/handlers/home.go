@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -99,9 +100,34 @@ func (h *HomeHandler) render(w http.ResponseWriter, r *http.Request, snap catalo
 	if msg, ok := flash.MessageFromRequest(r); ok {
 		props["flash"] = inertia.Flash{msg.Kind: msg.Message}
 	}
-	if err := h.inertia.Render(w, r, "Home", props); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	tracked := &trackedWriter{ResponseWriter: w}
+	if err := h.inertia.Render(tracked, r, "Home", props); err != nil {
+		// Inertia writes the template straight to the response, so a client that
+		// aborts mid-page leaves the status committed. Rewriting it as 500 would
+		// log a phantom server error and append text to the partial HTML.
+		if tracked.started {
+			log.Printf("home: render %s: %v", r.URL.Path, err)
+			return
+		}
+		http.Error(tracked, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// trackedWriter records whether anything was written, which is the only way to
+// tell a render failure that can still become a 500 from one that cannot.
+type trackedWriter struct {
+	http.ResponseWriter
+	started bool
+}
+
+func (w *trackedWriter) WriteHeader(code int) {
+	w.started = true
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *trackedWriter) Write(p []byte) (int, error) {
+	w.started = true
+	return w.ResponseWriter.Write(p)
 }
 
 func (h *HomeHandler) RepoTraffic(w http.ResponseWriter, r *http.Request, owner, repo string) {

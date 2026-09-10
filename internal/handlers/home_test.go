@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +12,31 @@ import (
 	"github.com/puppe1990/github-projects-viewer-cais/internal/catalog"
 	"github.com/puppe1990/github-projects-viewer-cais/internal/githubapi"
 )
+
+// deadClientWriter reproduces a client that goes away mid-response: net/http
+// records the implicit 200 when the first body chunk is written, then every
+// write fails because the connection is gone.
+type deadClientWriter struct {
+	header   http.Header
+	statuses []int
+}
+
+func newDeadClientWriter() *deadClientWriter {
+	return &deadClientWriter{header: http.Header{}}
+}
+
+func (w *deadClientWriter) Header() http.Header { return w.header }
+
+func (w *deadClientWriter) WriteHeader(code int) {
+	w.statuses = append(w.statuses, code)
+}
+
+func (w *deadClientWriter) Write(p []byte) (int, error) {
+	if len(w.statuses) == 0 {
+		w.statuses = append(w.statuses, http.StatusOK)
+	}
+	return 0, errors.New("write: connection reset by peer")
+}
 
 type homeGitHub struct {
 	user     githubapi.User
@@ -192,5 +218,14 @@ func TestHomeHandler_ContentType(t *testing.T) {
 	h.Index(rr, httptest.NewRequest(http.MethodGet, "/", nil))
 	if got := rr.Header().Get("Content-Type"); got == "" {
 		t.Errorf("Content-Type = %q", got)
+	}
+}
+
+func TestHomeHandler_AbortedClientDoesNotRewriteHeader(t *testing.T) {
+	h := newHomeHandler(t, homeGitHub{})
+	w := newDeadClientWriter()
+	h.Index(w, httptest.NewRequest(http.MethodGet, "/", nil))
+	if len(w.statuses) != 1 || w.statuses[0] != http.StatusOK {
+		t.Fatalf("statuses = %v, want [200]: an aborted client already has a response in flight, so appending an error page only corrupts it and logs a phantom 500", w.statuses)
 	}
 }
