@@ -124,4 +124,60 @@ describe("Home", () => {
     await fireEvent.click(screen.getByRole("tab", { name: "Catalog" }));
     expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
   });
+
+  test("paginates the catalog twenty repositories at a time", async () => {
+    const repos = Array.from({ length: 21 }, (_, i) => ({
+      name: `repo-${i + 1}`,
+      html_url: `https://github.com/octocat/repo-${i + 1}`,
+      stargazers_count: 21 - i,
+      forks_count: 0,
+      language: "Go",
+      description: "demo",
+      updated_at: "2026-08-01T00:00:00Z",
+    }));
+    render(Home, {
+      props: {
+        populated: true,
+        lookup: "octocat",
+        profile: { login: "octocat", name: "The Octocat", html_url: "https://github.com/octocat", avatar_url: "https://example.com/a.png", public_repos: 21, followers: 1, following: 1 },
+        orgs: [],
+        source: { type: "user", login: "octocat" },
+        repos,
+        error: "",
+      },
+    });
+    expect(screen.getByRole("link", { name: "repo-1" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "repo-20" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "repo-21" })).not.toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect(screen.getByRole("link", { name: "repo-21" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "repo-1" })).not.toBeInTheDocument();
+  });
+
+  test("lists public repositories by default and offers visibility options", async () => {
+    render(Home, {
+      props: {
+        populated: true,
+        lookup: "octocat",
+        profile: { login: "octocat", name: "The Octocat", html_url: "https://github.com/octocat", avatar_url: "https://example.com/a.png", public_repos: 2, followers: 1, following: 1 },
+        orgs: [],
+        source: { type: "user", login: "octocat" },
+        repos: [
+          { name: "hello-world", html_url: "https://github.com/octocat/hello-world", stargazers_count: 10, forks_count: 0, language: "Go", description: "public", updated_at: "2026-08-01T00:00:00Z", private: false },
+          { name: "secret", html_url: "https://github.com/octocat/secret", stargazers_count: 1, forks_count: 0, language: "Go", description: "private", updated_at: "2026-08-01T00:00:00Z", private: true },
+        ],
+        error: "",
+      },
+    });
+    expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "secret" })).not.toBeInTheDocument();
+    const visibility = screen.getByLabelText("Visibility");
+    expect(within(visibility).getByRole("option", { name: "Public" })).toBeInTheDocument();
+    expect(within(visibility).getByRole("option", { name: "Private" })).toBeInTheDocument();
+    expect(within(visibility).getByRole("option", { name: "All" })).toBeInTheDocument();
+    await fireEvent.change(visibility, { target: { value: "all" } });
+    expect(screen.getByRole("link", { name: "secret" })).toBeInTheDocument();
+  });
 });
+
+
