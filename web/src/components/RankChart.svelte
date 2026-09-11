@@ -18,7 +18,11 @@
     <ol class="rank-list">
       {#each rows as row}
         <li class="rank-row">
-          <span class="rank-name">{row[nameKey]}</span>
+          {#if row.href}
+            <a class="rank-name" href={row.href} target="_blank" rel="noopener noreferrer">{row[nameKey]}</a>
+          {:else}
+            <span class="rank-name">{row[nameKey]}</span>
+          {/if}
           <div class="rank-track" aria-hidden="true">
             <i class="rank-fill" class:is-clone={tone === "clones"} style={`--bar:${row.share}%`}></i>
           </div>

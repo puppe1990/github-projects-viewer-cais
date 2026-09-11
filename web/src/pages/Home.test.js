@@ -120,8 +120,9 @@ describe("Home", () => {
     await fireEvent.click(screen.getByRole("tab", { name: "Charts" }));
     expect(screen.getByRole("tab", { name: "Charts" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("region", { name: "Top unique visitors" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "hello-world" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tabpanel", { name: "Catalog" })).not.toBeInTheDocument();
     await fireEvent.click(screen.getByRole("tab", { name: "Catalog" }));
+    expect(screen.getByRole("tabpanel", { name: "Catalog" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
   });
 

@@ -1265,6 +1265,14 @@ a.stat:hover {
   font-family: var(--font-mono);
   font-size: 0.78rem;
   color: var(--ink-dim);
+  text-decoration: none;
+}
+
+a.rank-name:hover,
+a.rank-name:focus-visible {
+  color: var(--copper-hot);
+  text-decoration: underline;
+  outline: none;
 }
 
 .rank-track {

@@ -5,6 +5,7 @@ import CatalogCharts from "./CatalogCharts.svelte";
 const repos = [
   {
     name: "cais",
+    html_url: "https://github.com/puppe1990/cais",
     language: "Go",
     stargazers_count: 2,
     traffic: {
@@ -19,6 +20,7 @@ const repos = [
   },
   {
     name: "atlas",
+    html_url: "https://github.com/puppe1990/atlas",
     language: "Python",
     stargazers_count: 40,
     traffic: {
@@ -41,10 +43,10 @@ describe("CatalogCharts", () => {
   test("shows top unique visitors and unique cloners", () => {
     render(CatalogCharts, { props: { repos } });
     const visitors = screen.getByRole("region", { name: "Top unique visitors" });
-    expect(within(visitors).getByText("cais")).toBeInTheDocument();
+    expect(within(visitors).getByRole("link", { name: "cais" })).toHaveAttribute("href", "https://github.com/puppe1990/cais");
     expect(within(visitors).getByText("70")).toBeInTheDocument();
     const cloners = screen.getByRole("region", { name: "Top unique cloners" });
-    expect(within(cloners).getByText("atlas")).toBeInTheDocument();
+    expect(within(cloners).getByRole("link", { name: "atlas" })).toHaveAttribute("href", "https://github.com/puppe1990/atlas");
     expect(within(cloners).getByText("60")).toBeInTheDocument();
   });
 
@@ -55,6 +57,7 @@ describe("CatalogCharts", () => {
     expect(screen.getByRole("region", { name: "Unique visitors by language" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Last 14 days" })).toBeInTheDocument();
     const quiet = screen.getByRole("region", { name: "Quiet stars" });
-    expect(within(quiet).getByText("cais")).toBeInTheDocument();
+    expect(within(quiet).getByRole("link", { name: "cais" })).toHaveAttribute("href", "https://github.com/puppe1990/cais");
+    expect(within(screen.getByRole("region", { name: "Unique visitors by language" })).queryByRole("link")).not.toBeInTheDocument();
   });
 });
