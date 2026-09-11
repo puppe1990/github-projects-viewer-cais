@@ -967,6 +967,13 @@ a.stat:hover {
   flex: 0 0 auto;
 }
 
+.card-traffic {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: -0.45rem 0 0.85rem;
+}
+
 .lang,
 .stars,
 .forks,
@@ -984,6 +991,16 @@ a.stat:hover {
 .count-icon {
   display: block;
   flex: 0 0 auto;
+}
+
+.views,
+.clones-metric {
+  white-space: nowrap;
+}
+
+.metric-uniques {
+  color: var(--ink-mute);
+  font-size: 0.64rem;
 }
 
 .lang i {
@@ -1143,6 +1160,202 @@ a.stat:hover {
   border: 0;
 }
 
+.view-tabs {
+  display: inline-flex;
+  margin: 1.15rem 0 0;
+  padding: 0.22rem;
+  gap: 0.15rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--bg-elev);
+}
+
+.view-tab {
+  border: 0;
+  background: transparent;
+  color: var(--ink-dim);
+  border-radius: 999px;
+  padding: 0.42rem 1rem;
+  font: 600 0.88rem/1 var(--font-ui);
+  cursor: pointer;
+}
+
+.view-tab[aria-selected="true"] {
+  background: var(--copper-dim);
+  color: var(--copper-hot);
+}
+
+.view-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--copper-dim);
+}
+
+.catalog-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.1rem;
+}
+
+.chart-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+}
+
+.chart-totals .traffic-stat {
+  margin: 0;
+}
+
+.chart-panel {
+  padding: 1.05rem 1.1rem 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--card-from), var(--card-to));
+  box-shadow: var(--card-shadow);
+}
+
+.chart-panel-wide {
+  grid-column: 1 / -1;
+}
+
+.chart-head {
+  margin-bottom: 0.95rem;
+}
+
+.chart-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.chart-head p,
+.chart-empty,
+.chart-legend {
+  margin: 0.28rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-mute);
+}
+
+.rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: minmax(4.8rem, 7.2rem) 1fr auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.rank-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+
+.rank-track {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--inset);
+  overflow: hidden;
+}
+
+.rank-fill {
+  display: block;
+  height: 100%;
+  width: var(--bar, 0%);
+  border-radius: inherit;
+  background: var(--copper);
+}
+
+.rank-fill.is-clone {
+  background: var(--moss);
+}
+
+.rank-value {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.pulse-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  height: 148px;
+  overflow-x: auto;
+}
+
+.pulse-col {
+  flex: 1 1 1.7rem;
+  max-width: 2.4rem;
+  min-width: 1.35rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.pulse-pair {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+}
+
+.pulse-pair .traffic-bar {
+  flex: 1;
+  max-width: 9px;
+  min-height: 0;
+}
+
+.pulse-col span {
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
+.chart-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.55rem;
+  border-radius: 2px;
+  background: var(--copper);
+}
+
+.chart-swatch.is-clone {
+  background: var(--moss);
+  margin-left: 0.45rem;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -1184,6 +1397,11 @@ a.stat:hover {
   .profile-copy h2 {
     font-size: 1.55rem;
   }
+
+  .catalog-charts,
+  .chart-totals {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1216,6 +1434,11 @@ a.stat:hover {
   .field-grow,
   .field-sort {
     grid-column: span 12;
+  }
+
+  .catalog-charts,
+  .chart-totals {
+    grid-template-columns: 1fr;
   }
 
   .split,

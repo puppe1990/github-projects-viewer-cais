@@ -2,6 +2,7 @@
   import { router } from "@inertiajs/svelte";
   import ThemeToggle from "../components/ThemeToggle.svelte";
   import RepoCard from "../components/RepoCard.svelte";
+  import CatalogCharts from "../components/CatalogCharts.svelte";
   import SortModal from "../components/SortModal.svelte";
   import { applyFilters, languageOptions } from "../lib/filter.js";
   import { absoluteUrl, formatCount } from "../lib/format.js";
@@ -27,6 +28,7 @@
   let sortOpen = false;
   let loading = false;
   let preferTraffic = false;
+  let view = "catalog";
   $: if (!preferTraffic && (repos || []).some((repo) => repo.traffic?.available)) {
     sortBy = "traffic";
     preferTraffic = true;
@@ -235,23 +237,33 @@
   {/if}
 
   {#if populated && !loading}
-    <div id="projects" class="projects">
-      {#if visible.length === 0}
-        <div class="empty">
-          {#if source?.type === "org"}
-            <strong>Nothing in {source.login} matches.</strong>Loosen language, stars, or the homepage toggle.
-          {:else if source?.type === "all"}
-            <strong>Nothing across personal and orgs matches.</strong>Loosen language, stars, or the homepage toggle.
-          {:else}
-            <strong>Nothing matches these filters.</strong>Loosen language, stars, or the homepage toggle.
-          {/if}
-        </div>
-      {:else}
-        {#each visible as repo, index}
-          <RepoCard {repo} {index} />
-        {/each}
-      {/if}
+    <div class="view-tabs" role="tablist" aria-label="Catalog view">
+      <button type="button" class="view-tab" role="tab" id="tab-catalog" aria-controls="projects" aria-selected={view === "catalog"} on:click={() => (view = "catalog")}>Catalog</button>
+      <button type="button" class="view-tab" role="tab" id="tab-charts" aria-controls="panel-charts" aria-selected={view === "charts"} on:click={() => (view = "charts")}>Charts</button>
     </div>
+    {#if view === "catalog"}
+      <div id="projects" class="projects" role="tabpanel" aria-labelledby="tab-catalog">
+        {#if visible.length === 0}
+          <div class="empty">
+            {#if source?.type === "org"}
+              <strong>Nothing in {source.login} matches.</strong>Loosen language, stars, or the homepage toggle.
+            {:else if source?.type === "all"}
+              <strong>Nothing across personal and orgs matches.</strong>Loosen language, stars, or the homepage toggle.
+            {:else}
+              <strong>Nothing matches these filters.</strong>Loosen language, stars, or the homepage toggle.
+            {/if}
+          </div>
+        {:else}
+          {#each visible as repo, index}
+            <RepoCard {repo} {index} />
+          {/each}
+        {/if}
+      </div>
+    {:else}
+      <div id="panel-charts" role="tabpanel" aria-labelledby="tab-charts">
+        <CatalogCharts repos={visible} />
+      </div>
+    {/if}
   {/if}
 </div>
 

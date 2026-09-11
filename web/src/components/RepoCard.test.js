@@ -33,6 +33,12 @@ describe("RepoCard", () => {
     expect(within(dialog).getByText("342")).toBeInTheDocument();
   });
 
+  test("shows unique views and unique clones on the card", () => {
+    render(RepoCard, { props: { repo, index: 0 } });
+    expect(screen.getByTitle("17 views · 3 unique")).toHaveTextContent("3 unique");
+    expect(screen.getByTitle("342 clones · 104 unique")).toHaveTextContent("104 unique");
+  });
+
   test("shows a Private badge on private repositories", () => {
     render(RepoCard, { props: { repo: { ...repo, private: true, traffic: {} }, index: 0 } });
     expect(screen.getByText("Private")).toBeInTheDocument();
