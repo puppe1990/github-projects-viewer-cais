@@ -68,6 +68,12 @@ describe("rankTraffic", () => {
     ]);
   });
 
+  test("keeps the repository html url on ranked rows", () => {
+    const withUrls = catalog.map((repo, i) => ({ ...repo, html_url: `https://github.com/octocat/${repo.name}` }));
+    expect(rankTraffic(withUrls, "view_uniques", 1)[0].href).toBe("https://github.com/octocat/beta");
+    expect(quietStarsRank(withUrls)[0].href).toBe("https://github.com/octocat/beta");
+  });
+
   test("scales bar share against the peak value", () => {
     const [lead, second] = rankTraffic(catalog, "view_uniques", 10);
     expect(lead.share).toBe(100);

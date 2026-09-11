@@ -11,6 +11,7 @@ export function rankTraffic(repos, key, limit = 10) {
   const rows = trafficRepos(repos)
     .map((repo) => ({
       name: repo.name,
+      href: repo.html_url || "",
       language: repo.language || "Not specified",
       stars: repo.stargazers_count || 0,
       value: Number(repo.traffic?.[key]) || 0,
@@ -113,7 +114,7 @@ export function quietStarsRank(repos, limit = 10) {
     .map((repo) => {
       const uniques = repo.traffic.view_uniques || 0;
       const stars = repo.stargazers_count || 0;
-      return { name: repo.name, uniques, stars, score: uniques / Math.max(stars, 1) };
+      return { name: repo.name, href: repo.html_url || "", uniques, stars, score: uniques / Math.max(stars, 1) };
     })
     .filter((row) => row.uniques > 0)
     .sort((a, b) => b.score - a.score || b.uniques - a.uniques)
