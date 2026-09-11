@@ -28,6 +28,8 @@ describe("Home", () => {
     });
     expect(screen.getByRole("heading", { name: "The Octocat" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Charts" })).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText("Sort by")).queryByRole("option", { name: "Unique visitors" })).not.toBeInTheDocument();
   });
 
   test("offers unique sorts in the quick dropdown", () => {
@@ -116,6 +118,7 @@ describe("Home", () => {
         error: "",
       },
     });
+    expect(screen.getByRole("tab", { name: "Charts" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("tab", { name: "Charts" }));
     expect(screen.getByRole("tab", { name: "Charts" })).toHaveAttribute("aria-selected", "true");

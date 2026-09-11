@@ -6,10 +6,11 @@
   export let sortOrder = "desc";
   export let sortThen = "";
   export let sortThenOrder = "desc";
+  export let hasTraffic = false;
 
   const catalogFields = SORT_FIELDS.filter((field) => field.group === "catalog");
   const trafficFields = SORT_FIELDS.filter((field) => field.group === "traffic");
-  const thenFields = [{ value: "", label: "None" }, ...SORT_FIELDS];
+  $: thenFields = [{ value: "", label: "None" }, ...SORT_FIELDS.filter((field) => hasTraffic || field.group !== "traffic")];
 
   function close() {
     open = false;
@@ -45,16 +46,18 @@
         </div>
       </section>
 
-      <section class="sort-modal-block">
-        <h3>Traffic · 14 days</h3>
-        <div class="sort-chips">
-          {#each trafficFields as field}
-            <button type="button" class="sort-chip" class:is-active={sortBy === field.value} aria-pressed={sortBy === field.value} on:click={() => (sortBy = field.value)}>
-              {field.label}
-            </button>
-          {/each}
-        </div>
-      </section>
+      {#if hasTraffic}
+        <section class="sort-modal-block">
+          <h3>Traffic · 14 days</h3>
+          <div class="sort-chips">
+            {#each trafficFields as field}
+              <button type="button" class="sort-chip" class:is-active={sortBy === field.value} aria-pressed={sortBy === field.value} on:click={() => (sortBy = field.value)}>
+                {field.label}
+              </button>
+            {/each}
+          </div>
+        </section>
+      {/if}
 
       <section class="sort-modal-block">
         <h3>Order</h3>

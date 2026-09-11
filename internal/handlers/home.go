@@ -26,13 +26,6 @@ func NewHomeHandler(site meta.Site, i *inertia.Inertia, loader *catalog.Loader) 
 }
 
 func (h *HomeHandler) Index(w http.ResponseWriter, r *http.Request) {
-	if h.loader != nil && h.loader.GitHub != nil && h.loader.GitHub.HasToken() {
-		me, err := h.loader.GitHub.Me(r.Context())
-		if err == nil && me.Login != "" {
-			http.Redirect(w, r, "/u/"+me.Login+"/all", http.StatusSeeOther)
-			return
-		}
-	}
 	h.render(w, r, catalog.Snapshot{}, "", "", false)
 }
 
