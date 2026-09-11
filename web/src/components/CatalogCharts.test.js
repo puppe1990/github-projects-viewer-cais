@@ -60,4 +60,11 @@ describe("CatalogCharts", () => {
     expect(within(quiet).getByRole("link", { name: "cais" })).toHaveAttribute("href", "https://github.com/puppe1990/cais");
     expect(within(screen.getByRole("region", { name: "Unique visitors by language" })).queryByRole("link")).not.toBeInTheDocument();
   });
+
+  test("pulse bars show unique counts on hover", () => {
+    render(CatalogCharts, { props: { repos } });
+    const pulse = screen.getByRole("region", { name: "Last 14 days" });
+    expect(within(pulse).getByTitle("8 unique visitors")).toBeInTheDocument();
+    expect(within(pulse).getByTitle("1 unique cloner")).toBeInTheDocument();
+  });
 });

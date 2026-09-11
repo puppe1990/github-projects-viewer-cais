@@ -295,6 +295,10 @@ html[data-theme="light"] .theme-toggle .icon-moon {
 }
 
 #search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   margin: 0.4rem;
   border: 0;
   border-radius: 999px;
@@ -907,21 +911,111 @@ a.stat:hover {
   box-shadow: 0 0 0 3px var(--copper-dim);
 }
 
-.loader-wrap {
-  display: grid;
-  place-items: center;
-  gap: 0.85rem;
-  padding: 3.5rem 0;
-  color: var(--ink-dim);
+.catalog-stage {
+  position: relative;
+  min-height: 4rem;
 }
 
-.loader {
-  width: 36px;
-  height: 36px;
+.catalog-stage.is-busy > :not(.loader-overlay) {
+  opacity: 0.32;
+  filter: blur(1.4px);
+  pointer-events: none;
+  transition:
+    opacity 0.45s ease,
+    filter 0.45s ease;
+}
+
+.loader-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-content: center;
+  place-items: center;
+  gap: 0.95rem;
+  min-height: 12rem;
+  padding: 2.5rem 0 3rem;
+  color: var(--ink-dim);
+  animation: rise 0.4s ease both;
+}
+
+.loader-overlay #loader-copy {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.atlas-spinner {
+  position: relative;
+  width: 3.35rem;
+  height: 3.35rem;
+}
+
+.atlas-spinner.is-sm {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.atlas-spinner-orbit,
+.atlas-spinner-arc,
+.atlas-spinner-core {
+  position: absolute;
+  display: block;
   border-radius: 50%;
-  border: 2px solid var(--line-strong);
+}
+
+.atlas-spinner-orbit {
+  inset: 0;
+  border: 1px dashed color-mix(in srgb, var(--copper) 55%, transparent);
+  animation: spin 5.2s linear infinite;
+}
+
+.atlas-spinner-arc {
+  inset: 7px;
+  border: 2px solid transparent;
   border-top-color: var(--copper);
-  animation: spin 0.8s linear infinite;
+  border-right-color: var(--copper-hot);
+  animation: spin 0.85s cubic-bezier(0.45, 0.05, 0.2, 1) infinite;
+}
+
+.atlas-spinner.is-sm .atlas-spinner-arc {
+  inset: 1px;
+  border-width: 1.5px;
+}
+
+.atlas-spinner-core {
+  inset: 38%;
+  background: var(--copper);
+  box-shadow: 0 0 14px var(--glow-a);
+  animation: pulse-core 1.15s ease-in-out infinite;
+}
+
+.atlas-spinner.is-sm .atlas-spinner-core {
+  inset: 32%;
+  box-shadow: none;
+}
+
+.catalog-panel {
+  animation: rise 0.45s ease both;
+}
+
+#search-btn:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+#nprogress .bar {
+  background: var(--copper) !important;
+  height: 2px;
+}
+
+#nprogress .peg {
+  box-shadow:
+    0 0 10px var(--copper),
+    0 0 5px var(--copper) !important;
 }
 
 .projects {
@@ -1306,11 +1400,12 @@ a.rank-name:focus-visible {
   align-items: flex-end;
   justify-content: flex-start;
   gap: 0.45rem;
-  height: 148px;
+  height: 168px;
   overflow-x: auto;
 }
 
 .pulse-col {
+  position: relative;
   flex: 1 1 1.7rem;
   max-width: 2.4rem;
   min-width: 1.35rem;
@@ -1319,6 +1414,42 @@ a.rank-name:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  padding-top: 1.45rem;
+}
+
+.pulse-tip {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  display: flex;
+  gap: 0.28rem;
+  margin: 0;
+  padding: 0.12rem 0.32rem;
+  border-radius: 6px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--card-shadow);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  line-height: 1;
+  color: var(--copper);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.pulse-tip .is-clone {
+  color: var(--moss);
+}
+
+.pulse-col:hover .pulse-tip,
+.pulse-col:focus-within .pulse-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .pulse-pair {
@@ -1334,6 +1465,7 @@ a.rank-name:focus-visible {
   flex: 1;
   max-width: 9px;
   min-height: 0;
+  cursor: pointer;
 }
 
 .pulse-col span {
@@ -1418,6 +1550,18 @@ a.rank-name:focus-visible {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-core {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 

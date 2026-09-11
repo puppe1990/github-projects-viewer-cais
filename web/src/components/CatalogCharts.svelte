@@ -64,12 +64,16 @@
           <h3 id="chart-pulse">Last 14 days</h3>
           <p>Unique visitors and cloners summed across this catalog.</p>
         </header>
-        <div class="pulse-chart" aria-hidden="true">
+        <div class="pulse-chart">
           {#each pulse as day}
             <div class="pulse-col">
+              <p class="pulse-tip">
+                <span>{formatCount(day.viewUniques)}</span>
+                <span class="is-clone">{formatCount(day.cloneUniques)}</span>
+              </p>
               <div class="pulse-pair">
-                <div class="traffic-bar" style={`height:${day.viewHeight}`}></div>
-                <div class="traffic-bar traffic-bar-clone" style={`height:${day.cloneHeight}`}></div>
+                <div class="traffic-bar" style={`height:${day.viewHeight}`} title={`${formatCount(day.viewUniques)} unique visitor${day.viewUniques === 1 ? "" : "s"}`}></div>
+                <div class="traffic-bar traffic-bar-clone" style={`height:${day.cloneHeight}`} title={`${formatCount(day.cloneUniques)} unique cloner${day.cloneUniques === 1 ? "" : "s"}`}></div>
               </div>
               <span>{day.label}</span>
             </div>
