@@ -4,6 +4,7 @@
   import RepoCard from "../components/RepoCard.svelte";
   import CatalogCharts from "../components/CatalogCharts.svelte";
   import CatalogPager from "../components/CatalogPager.svelte";
+  import CatalogSpinner from "../components/CatalogSpinner.svelte";
   import SortModal from "../components/SortModal.svelte";
   import { applyFilters, languageOptions } from "../lib/filter.js";
   import { sliceCatalogPage } from "../lib/catalogPage.js";
@@ -61,7 +62,10 @@
 
   function go(path) {
     loading = true;
-    router.get(path, {}, { onFinish: () => { loading = false } });
+    router.get(path, {}, {
+      onStart: () => { loading = true },
+      onFinish: () => { loading = false },
+    });
   }
 
   function submit() {
@@ -128,7 +132,10 @@
     <div class="search-shell">
       <span class="search-prefix" aria-hidden="true">@</span>
       <input id="username" name="username" type="text" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="username" bind:value={username}>
-      <button type="submit" id="search-btn">Look up</button>
+      <button type="submit" id="search-btn" disabled={loading} aria-busy={loading}>
+        {#if loading}<CatalogSpinner size="sm" />{/if}
+        Look up
+      </button>
     </div>
     <p class="hints">
       <span>Try</span>
@@ -258,14 +265,15 @@
     </section>
   {/if}
 
-  {#if loading}
-    <div id="loader" class="loader-wrap">
-      <div class="loader" aria-hidden="true"></div>
-      <p id="loader-copy">Reading the public graph…</p>
-    </div>
-  {/if}
+  <div class="catalog-stage" class:is-busy={loading} aria-busy={loading}>
+    {#if loading}
+      <div id="loader" class="loader-overlay" role="status" aria-labelledby="loader-copy" aria-live="polite">
+        <CatalogSpinner />
+        <p id="loader-copy">Reading the public graph…</p>
+      </div>
+    {/if}
 
-  {#if populated && !loading}
+    {#if populated}
     {#if hasTraffic}
       <div class="view-tabs" role="tablist" aria-label="Catalog view">
         <button type="button" class="view-tab" role="tab" id="tab-catalog" aria-controls="projects" aria-selected={view === "catalog"} on:click={() => (view = "catalog")}>Catalog</button>
@@ -273,7 +281,7 @@
       </div>
     {/if}
     {#if view === "catalog" || !hasTraffic}
-      <div id="projects" role={hasTraffic ? "tabpanel" : undefined} aria-labelledby={hasTraffic ? "tab-catalog" : undefined}>
+      <div id="projects" class="catalog-panel" role={hasTraffic ? "tabpanel" : undefined} aria-labelledby={hasTraffic ? "tab-catalog" : undefined}>
         {#if visible.length === 0}
           <div class="projects">
             <div class="empty">
@@ -296,11 +304,12 @@
         {/if}
       </div>
     {:else}
-      <div id="panel-charts" role="tabpanel" aria-labelledby="tab-charts">
+      <div id="panel-charts" class="catalog-panel" role="tabpanel" aria-labelledby="tab-charts">
         <CatalogCharts repos={visible} />
       </div>
     {/if}
-  {/if}
+    {/if}
+  </div>
 </div>
 
 <SortModal bind:open={sortOpen} bind:sortBy bind:sortOrder bind:sortThen bind:sortThenOrder {hasTraffic} />

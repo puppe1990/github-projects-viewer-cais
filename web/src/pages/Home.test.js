@@ -14,6 +14,14 @@ describe("Home", () => {
     expect(screen.getByLabelText("GitHub username")).toBeInTheDocument();
   });
 
+  test("shows a catalog spinner while looking up a username", async () => {
+    render(Home, { props: { populated: false, repos: [], orgs: [], profile: {}, source: {}, error: "" } });
+    await fireEvent.input(screen.getByLabelText("GitHub username"), { target: { value: "octocat" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Look up" }));
+    expect(screen.getByRole("status", { name: /Reading the public graph/ })).toBeInTheDocument();
+    expect(document.querySelector(".atlas-spinner")).toBeInTheDocument();
+  });
+
   test("renders a populated profile and repo card", () => {
     render(Home, {
       props: {

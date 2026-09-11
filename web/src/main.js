@@ -2,6 +2,12 @@ import { createInertiaApp } from '@inertiajs/svelte'
 import { mount } from 'svelte'
 
 createInertiaApp({
+  progress: {
+    delay: 80,
+    color: "#d4a06a",
+    includeCSS: true,
+    showSpinner: false,
+  },
   resolve: (name) => {
     const pages = import.meta.glob('./pages/**/*.svelte', { eager: true })
     const page = pages[`./pages/${name}.svelte`]
