@@ -54,6 +54,7 @@ export function applyFilters(repos, filters) {
   const query = (filters.query || "").toLowerCase();
   const includeForks = !!filters.includeForks;
   const hasHomepage = !!filters.hasHomepage;
+  const visibility = filters.visibility || "public";
   const sortBy = filters.sortBy || "stars";
   const sortOrder = filters.sortOrder || "desc";
   const sortThen = (filters.sortThen || "").trim();
@@ -66,6 +67,8 @@ export function applyFilters(repos, filters) {
     const text = `${repo.name || ""} ${repo.description || ""}`.toLowerCase();
     if (query && !text.includes(query)) return false;
     if (!includeForks && repo.fork) return false;
+    if (visibility === "public" && repo.private) return false;
+    if (visibility === "private" && !repo.private) return false;
     const homepage = (repo.homepage || "").trim();
     if (hasHomepage && !homepage) return false;
     return true;

@@ -23,6 +23,21 @@ describe("applyFilters", () => {
     expect(got).toHaveLength(0);
   });
 
+  test("lists public repositories by default and can show private or all", () => {
+    const mixed = [
+      { name: "open", private: false, stargazers_count: 1 },
+      { name: "secret", private: true, stargazers_count: 1 },
+    ];
+    expect(applyFilters(mixed, { includeForks: true, sortBy: "name", sortOrder: "asc" }).map((r) => r.name)).toEqual(["open"]);
+    expect(applyFilters(mixed, { includeForks: true, visibility: "private", sortBy: "name", sortOrder: "asc" }).map((r) => r.name)).toEqual([
+      "secret",
+    ]);
+    expect(applyFilters(mixed, { includeForks: true, visibility: "all", sortBy: "name", sortOrder: "asc" }).map((r) => r.name)).toEqual([
+      "open",
+      "secret",
+    ]);
+  });
+
   test("sorts by traffic views and clones", () => {
     const withTraffic = [
       { name: "quiet", traffic: { views: 2, clones: 80, view_uniques: 2, clone_uniques: 10 } },

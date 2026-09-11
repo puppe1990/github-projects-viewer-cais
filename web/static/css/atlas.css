@@ -572,7 +572,8 @@ a.stat:hover {
   grid-column: span 3;
 }
 
-.field-stars {
+.field-stars,
+.field-visibility {
   grid-column: span 2;
 }
 
@@ -1356,6 +1357,45 @@ a.stat:hover {
   margin-left: 0.45rem;
 }
 
+.catalog-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin: 1.35rem 0 0.4rem;
+}
+
+.pager-btn {
+  border: 1px solid var(--line-strong);
+  background: var(--bg-elev);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.45rem 1.05rem;
+  font: 600 0.88rem/1 var(--font-ui);
+  cursor: pointer;
+}
+
+.pager-btn:hover:not(:disabled),
+.pager-btn:focus-visible {
+  border-color: var(--copper);
+  color: var(--copper-hot);
+  outline: none;
+}
+
+.pager-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pager-status {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -1380,6 +1420,7 @@ a.stat:hover {
 
   .field,
   .field-stars,
+  .field-visibility,
   .field-grow,
   .field-sort {
     grid-column: span 6;
@@ -1431,6 +1472,7 @@ a.stat:hover {
 
   .field,
   .field-stars,
+  .field-visibility,
   .field-grow,
   .field-sort {
     grid-column: span 12;

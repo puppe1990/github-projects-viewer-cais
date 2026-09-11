@@ -3,8 +3,10 @@
   import ThemeToggle from "../components/ThemeToggle.svelte";
   import RepoCard from "../components/RepoCard.svelte";
   import CatalogCharts from "../components/CatalogCharts.svelte";
+  import CatalogPager from "../components/CatalogPager.svelte";
   import SortModal from "../components/SortModal.svelte";
   import { applyFilters, languageOptions } from "../lib/filter.js";
+  import { sliceCatalogPage } from "../lib/catalogPage.js";
   import { absoluteUrl, formatCount } from "../lib/format.js";
 
   export let profile = {};
@@ -21,6 +23,7 @@
   let query = "";
   let includeForks = true;
   let hasHomepage = false;
+  let visibility = "public";
   let sortBy = "stars";
   let sortOrder = "desc";
   let sortThen = "";
@@ -29,13 +32,21 @@
   let loading = false;
   let preferTraffic = false;
   let view = "catalog";
+  let page = 1;
+  let lastFilterKey = "";
   $: if (!preferTraffic && (repos || []).some((repo) => repo.traffic?.available)) {
     sortBy = "traffic";
     preferTraffic = true;
   }
 
   $: langs = languageOptions(repos);
-  $: visible = applyFilters(repos, { language, minStars, query, includeForks, hasHomepage, sortBy, sortOrder, sortThen, sortThenOrder });
+  $: visible = applyFilters(repos, { language, minStars, query, includeForks, hasHomepage, visibility, sortBy, sortOrder, sortThen, sortThenOrder });
+  $: filterKey = [language, minStars, query, includeForks, hasHomepage, visibility, sortBy, sortOrder, sortThen, sortThenOrder].join("|");
+  $: if (filterKey !== lastFilterKey) {
+    lastFilterKey = filterKey;
+    page = 1;
+  }
+  $: catalogPage = sliceCatalogPage(visible, page);
   $: if (typeof document !== "undefined") {
     document.body.classList.toggle("is-populated", !!populated);
   }
@@ -195,6 +206,14 @@
             {/each}
           </select>
         </label>
+        <label class="field field-visibility">
+          <span>Visibility</span>
+          <select id="filter-visibility" bind:value={visibility}>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+            <option value="all">All</option>
+          </select>
+        </label>
         <label class="field field-stars">
           <span>Min stars</span>
           <input id="filter-stars-min" type="number" min="0" placeholder="Any" inputmode="numeric" bind:value={minStars}>
@@ -242,21 +261,26 @@
       <button type="button" class="view-tab" role="tab" id="tab-charts" aria-controls="panel-charts" aria-selected={view === "charts"} on:click={() => (view = "charts")}>Charts</button>
     </div>
     {#if view === "catalog"}
-      <div id="projects" class="projects" role="tabpanel" aria-labelledby="tab-catalog">
+      <div id="projects" role="tabpanel" aria-labelledby="tab-catalog">
         {#if visible.length === 0}
-          <div class="empty">
-            {#if source?.type === "org"}
-              <strong>Nothing in {source.login} matches.</strong>Loosen language, stars, or the homepage toggle.
-            {:else if source?.type === "all"}
-              <strong>Nothing across personal and orgs matches.</strong>Loosen language, stars, or the homepage toggle.
-            {:else}
-              <strong>Nothing matches these filters.</strong>Loosen language, stars, or the homepage toggle.
-            {/if}
+          <div class="projects">
+            <div class="empty">
+              {#if source?.type === "org"}
+                <strong>Nothing in {source.login} matches.</strong>Loosen language, stars, or the homepage toggle.
+              {:else if source?.type === "all"}
+                <strong>Nothing across personal and orgs matches.</strong>Loosen language, stars, or the homepage toggle.
+              {:else}
+                <strong>Nothing matches these filters.</strong>Loosen language, stars, or the homepage toggle.
+              {/if}
+            </div>
           </div>
         {:else}
-          {#each visible as repo, index}
-            <RepoCard {repo} {index} />
-          {/each}
+          <div class="projects">
+            {#each catalogPage.items as repo, index}
+              <RepoCard {repo} {index} />
+            {/each}
+          </div>
+          <CatalogPager bind:page pages={catalogPage.pages} />
         {/if}
       </div>
     {:else}
