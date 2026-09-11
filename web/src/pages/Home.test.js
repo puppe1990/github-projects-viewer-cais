@@ -92,4 +92,36 @@ describe("Home", () => {
     await fireEvent.click(allChip);
     expect(router.get).toHaveBeenCalledWith("/u/puppe1990/all", {}, expect.any(Object));
   });
+
+  test("switches from catalog cards to a charts tab", async () => {
+    render(Home, {
+      props: {
+        populated: true,
+        lookup: "octocat",
+        profile: { login: "octocat", name: "The Octocat", html_url: "https://github.com/octocat", avatar_url: "https://example.com/a.png", public_repos: 1, followers: 1, following: 1 },
+        orgs: [],
+        source: { type: "user", login: "octocat" },
+        repos: [
+          {
+            name: "hello-world",
+            html_url: "https://github.com/octocat/hello-world",
+            stargazers_count: 10,
+            forks_count: 2,
+            language: "Go",
+            description: "demo",
+            updated_at: "2026-08-01T00:00:00Z",
+            traffic: { available: true, views: 40, view_uniques: 22, clones: 9, clone_uniques: 6 },
+          },
+        ],
+        error: "",
+      },
+    });
+    expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("tab", { name: "Charts" }));
+    expect(screen.getByRole("tab", { name: "Charts" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("region", { name: "Top unique visitors" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "hello-world" })).not.toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("tab", { name: "Catalog" }));
+    expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
+  });
 });

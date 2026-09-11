@@ -37,12 +37,14 @@
     <span class="card-counts">
       <span class="stars" title={`${formatCount(repo.stargazers_count)} stars`}>★ {formatCount(repo.stargazers_count)}</span>
       <span class="forks" title={`${formatCount(repo.forks_count)} forks`}>{@html FORK_ICON} {formatCount(repo.forks_count)}</span>
-      {#if traffic.available}
-        <span class="views" title={`${formatCount(traffic.views)} views · ${formatCount(traffic.view_uniques)} unique`}>↗ {formatCount(traffic.views)}</span>
-        <span class="clones-metric" title={`${formatCount(traffic.clones)} clones · ${formatCount(traffic.clone_uniques)} unique`}>↓ {formatCount(traffic.clones)}</span>
-      {/if}
     </span>
   </div>
+  {#if traffic.available}
+    <div class="card-traffic">
+      <span class="views" title={`${formatCount(traffic.views)} views · ${formatCount(traffic.view_uniques)} unique`}>↗ {formatCount(traffic.views)} <span class="metric-uniques">· {formatCount(traffic.view_uniques)} unique</span></span>
+      <span class="clones-metric" title={`${formatCount(traffic.clones)} clones · ${formatCount(traffic.clone_uniques)} unique`}>↓ {formatCount(traffic.clones)} <span class="metric-uniques">· {formatCount(traffic.clone_uniques)} unique</span></span>
+    </div>
+  {/if}
   <h2><a href={repo.html_url} target="_blank" rel="noopener noreferrer">{repo.name}</a></h2>
   {#if repo.fork || repo.archived || repo.private}
     <div class="badges">
