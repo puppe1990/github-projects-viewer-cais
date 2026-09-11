@@ -34,9 +34,17 @@
   let view = "catalog";
   let page = 1;
   let lastFilterKey = "";
-  $: if (!preferTraffic && (repos || []).some((repo) => repo.traffic?.available)) {
+  $: hasTraffic = (repos || []).some((repo) => repo.traffic?.available);
+  $: if (hasTraffic && !preferTraffic) {
     sortBy = "traffic";
     preferTraffic = true;
+  }
+  $: if (!hasTraffic) {
+    preferTraffic = false;
+    if (sortBy === "traffic" || sortBy === "views" || sortBy === "view_uniques" || sortBy === "clones" || sortBy === "clone_uniques") {
+      sortBy = "stars";
+    }
+    if (view === "charts") view = "catalog";
   }
 
   $: langs = languageOptions(repos);
@@ -230,10 +238,12 @@
               <option value="forks">Forks</option>
               <option value="updated">Updated</option>
               <option value="name">Name</option>
-              <option value="traffic">Traffic</option>
-              <option value="view_uniques">Unique visitors</option>
-              <option value="clones">Clones</option>
-              <option value="clone_uniques">Unique cloners</option>
+              {#if hasTraffic}
+                <option value="traffic">Traffic</option>
+                <option value="view_uniques">Unique visitors</option>
+                <option value="clones">Clones</option>
+                <option value="clone_uniques">Unique cloners</option>
+              {/if}
             </select>
             <select id="sort-order" aria-label="Sort order" bind:value={sortOrder}>
               <option value="desc">Desc</option>
@@ -256,12 +266,14 @@
   {/if}
 
   {#if populated && !loading}
-    <div class="view-tabs" role="tablist" aria-label="Catalog view">
-      <button type="button" class="view-tab" role="tab" id="tab-catalog" aria-controls="projects" aria-selected={view === "catalog"} on:click={() => (view = "catalog")}>Catalog</button>
-      <button type="button" class="view-tab" role="tab" id="tab-charts" aria-controls="panel-charts" aria-selected={view === "charts"} on:click={() => (view = "charts")}>Charts</button>
-    </div>
-    {#if view === "catalog"}
-      <div id="projects" role="tabpanel" aria-labelledby="tab-catalog">
+    {#if hasTraffic}
+      <div class="view-tabs" role="tablist" aria-label="Catalog view">
+        <button type="button" class="view-tab" role="tab" id="tab-catalog" aria-controls="projects" aria-selected={view === "catalog"} on:click={() => (view = "catalog")}>Catalog</button>
+        <button type="button" class="view-tab" role="tab" id="tab-charts" aria-controls="panel-charts" aria-selected={view === "charts"} on:click={() => (view = "charts")}>Charts</button>
+      </div>
+    {/if}
+    {#if view === "catalog" || !hasTraffic}
+      <div id="projects" role={hasTraffic ? "tabpanel" : undefined} aria-labelledby={hasTraffic ? "tab-catalog" : undefined}>
         {#if visible.length === 0}
           <div class="projects">
             <div class="empty">
@@ -291,4 +303,4 @@
   {/if}
 </div>
 
-<SortModal bind:open={sortOpen} bind:sortBy bind:sortOrder bind:sortThen bind:sortThenOrder />
+<SortModal bind:open={sortOpen} bind:sortBy bind:sortOrder bind:sortThen bind:sortThenOrder {hasTraffic} />

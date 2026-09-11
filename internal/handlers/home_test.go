@@ -86,7 +86,7 @@ func newHomeHandler(t *testing.T, gh catalog.GitHub) *HomeHandler {
 	return NewHomeHandler(testSite(), setupTestInertia(t), loader)
 }
 
-func TestHomeHandler_IndexRedirectsToAuthenticatedUser(t *testing.T) {
+func TestHomeHandler_IndexDoesNotOpenAuthenticatedUser(t *testing.T) {
 	h := newHomeHandler(t, homeGitHub{
 		token: true,
 		user:  githubapi.User{Login: "puppe1990", Name: "Matheus"},
@@ -94,11 +94,11 @@ func TestHomeHandler_IndexRedirectsToAuthenticatedUser(t *testing.T) {
 	})
 	rr := httptest.NewRecorder()
 	h.Index(rr, httptest.NewRequest(http.MethodGet, "/", nil))
-	if rr.Code != http.StatusSeeOther {
-		t.Fatalf("status = %d, want %d", rr.Code, http.StatusSeeOther)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
 	}
-	if loc := rr.Header().Get("Location"); loc != "/u/puppe1990/all" {
-		t.Fatalf("Location = %q", loc)
+	if loc := rr.Header().Get("Location"); loc != "" {
+		t.Fatalf("Location = %q, want empty", loc)
 	}
 }
 
