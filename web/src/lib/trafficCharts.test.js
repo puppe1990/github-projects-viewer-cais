@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   catalogTrafficTotals,
+  cutUnsettledDays,
   dailyCatalogPulse,
   pulseBars,
   quietStarsRank,
@@ -116,6 +117,34 @@ describe("dailyCatalogPulse", () => {
       },
     ];
     expect(dailyCatalogPulse(sparse).map((day) => day.date)).toEqual(["2026-08-27", "2026-08-28", "2026-08-29"]);
+  });
+});
+
+describe("cutUnsettledDays", () => {
+  const pulse = [
+    { date: "2026-09-16", viewUniques: 5, cloneUniques: 2 },
+    { date: "2026-09-17", viewUniques: 3, cloneUniques: 1 },
+    { date: "2026-09-18", viewUniques: 0, cloneUniques: 0 },
+    { date: "2026-09-19", viewUniques: 0, cloneUniques: 0 },
+  ];
+
+  test("drops trailing days GitHub has not settled yet", () => {
+    const now = new Date("2026-09-19T03:00:00Z");
+    expect(cutUnsettledDays(pulse, now).map((day) => day.date)).toEqual(["2026-09-16", "2026-09-17"]);
+  });
+
+  test("keeps a day once it is older than the settle window", () => {
+    const now = new Date("2026-09-19T13:00:00Z");
+    expect(cutUnsettledDays(pulse, now).map((day) => day.date)).toEqual([
+      "2026-09-16",
+      "2026-09-17",
+      "2026-09-18",
+    ]);
+  });
+
+  test("returns an empty list when every day is unsettled", () => {
+    const fresh = [{ date: "2026-09-19", viewUniques: 1, cloneUniques: 0 }];
+    expect(cutUnsettledDays(fresh, new Date("2026-09-19T03:00:00Z"))).toEqual([]);
   });
 });
 
