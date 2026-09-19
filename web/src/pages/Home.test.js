@@ -5,6 +5,7 @@ import Home from "./Home.svelte";
 
 vi.mock("@inertiajs/svelte", () => ({
   router: { get: vi.fn() },
+  inertia: () => {},
 }));
 
 describe("Home", () => {
@@ -103,38 +104,58 @@ describe("Home", () => {
     expect(router.get).toHaveBeenCalledWith("/u/puppe1990/all", {}, expect.any(Object));
   });
 
-  test("switches from catalog cards to a charts tab", async () => {
-    render(Home, {
-      props: {
-        populated: true,
-        lookup: "octocat",
-        profile: { login: "octocat", name: "The Octocat", html_url: "https://github.com/octocat", avatar_url: "https://example.com/a.png", public_repos: 1, followers: 1, following: 1 },
-        orgs: [],
-        source: { type: "user", login: "octocat" },
-        repos: [
-          {
-            name: "hello-world",
-            html_url: "https://github.com/octocat/hello-world",
-            stargazers_count: 10,
-            forks_count: 2,
-            language: "Go",
-            description: "demo",
-            updated_at: "2026-08-01T00:00:00Z",
-            traffic: { available: true, views: 40, view_uniques: 22, clones: 9, clone_uniques: 6 },
-          },
-        ],
-        error: "",
+  const trafficHomeProps = {
+    populated: true,
+    lookup: "octocat",
+    profile: { login: "octocat", name: "The Octocat", html_url: "https://github.com/octocat", avatar_url: "https://example.com/a.png", public_repos: 1, followers: 1, following: 1 },
+    orgs: [],
+    source: { type: "user", login: "octocat" },
+    repos: [
+      {
+        name: "hello-world",
+        html_url: "https://github.com/octocat/hello-world",
+        stargazers_count: 10,
+        forks_count: 2,
+        language: "Go",
+        description: "demo",
+        updated_at: "2026-08-01T00:00:00Z",
+        traffic: { available: true, views: 40, view_uniques: 22, clones: 9, clone_uniques: 6 },
       },
-    });
-    expect(screen.getByRole("tab", { name: "Charts" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
-    await fireEvent.click(screen.getByRole("tab", { name: "Charts" }));
+    ],
+    error: "",
+  };
+
+  test("links catalog and charts to their own routes", () => {
+    render(Home, { props: trafficHomeProps });
+    const catalog = screen.getByRole("tab", { name: "Catalog" });
+    const charts = screen.getByRole("tab", { name: "Charts" });
+    expect(catalog).toHaveAttribute("href", "/u/octocat");
+    expect(charts).toHaveAttribute("href", "/u/octocat/charts");
+    expect(catalog).toHaveAttribute("aria-selected", "true");
+    expect(charts).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tabpanel", { name: "Catalog" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Top unique visitors" })).not.toBeInTheDocument();
+  });
+
+  test("renders the charts panel on its own route", () => {
+    render(Home, { props: { ...trafficHomeProps, view: "charts" } });
     expect(screen.getByRole("tab", { name: "Charts" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("region", { name: "Top unique visitors" })).toBeInTheDocument();
     expect(screen.queryByRole("tabpanel", { name: "Catalog" })).not.toBeInTheDocument();
-    await fireEvent.click(screen.getByRole("tab", { name: "Catalog" }));
-    expect(screen.getByRole("tabpanel", { name: "Catalog" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "hello-world" })).toBeInTheDocument();
+  });
+
+  test("links the charts route for the combined catalog", () => {
+    render(Home, {
+      props: { ...trafficHomeProps, profile: { ...trafficHomeProps.profile, login: "puppe1990" }, source: { type: "all", login: "puppe1990" } },
+    });
+    expect(screen.getByRole("tab", { name: "Charts" })).toHaveAttribute("href", "/u/puppe1990/all/charts");
+  });
+
+  test("links the charts route for an org catalog", () => {
+    render(Home, {
+      props: { ...trafficHomeProps, source: { type: "org", login: "github" } },
+    });
+    expect(screen.getByRole("tab", { name: "Charts" })).toHaveAttribute("href", "/u/octocat/orgs/github/charts");
   });
 
   test("paginates the catalog twenty repositories at a time", async () => {
