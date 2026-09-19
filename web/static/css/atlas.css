@@ -1266,12 +1266,15 @@ a.stat:hover {
 }
 
 .view-tab {
+  display: inline-flex;
+  align-items: center;
   border: 0;
   background: transparent;
   color: var(--ink-dim);
   border-radius: 999px;
   padding: 0.42rem 1rem;
   font: 600 0.88rem/1 var(--font-ui);
+  text-decoration: none;
   cursor: pointer;
 }
 

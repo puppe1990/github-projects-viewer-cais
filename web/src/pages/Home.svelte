@@ -1,5 +1,5 @@
 <script>
-  import { router } from "@inertiajs/svelte";
+  import { inertia, router } from "@inertiajs/svelte";
   import ThemeToggle from "../components/ThemeToggle.svelte";
   import RepoCard from "../components/RepoCard.svelte";
   import CatalogCharts from "../components/CatalogCharts.svelte";
@@ -17,6 +17,7 @@
   export let error = "";
   export let populated = false;
   export let lookup = "";
+  export let view = "catalog";
 
   let username = lookup || "";
   let language = "";
@@ -32,7 +33,6 @@
   let sortOpen = false;
   let loading = false;
   let preferTraffic = false;
-  let view = "catalog";
   let page = 1;
   let lastFilterKey = "";
   $: hasTraffic = (repos || []).some((repo) => repo.traffic?.available);
@@ -45,7 +45,6 @@
     if (sortBy === "traffic" || sortBy === "views" || sortBy === "view_uniques" || sortBy === "clones" || sortBy === "clone_uniques") {
       sortBy = "stars";
     }
-    if (view === "charts") view = "catalog";
   }
 
   $: langs = languageOptions(repos);
@@ -102,6 +101,15 @@
       return `${shown} of ${loaded} loaded · ${formatCount(publicCount)} public`;
     }
     return `${shown} of ${loaded} repositories`;
+  })();
+
+  $: basePath = (() => {
+    const login = profile?.login || "";
+    if (!login) return "/";
+    const root = `/u/${encodeURIComponent(login)}`;
+    if (source?.type === "org" && source?.login) return `${root}/orgs/${encodeURIComponent(source.login)}`;
+    if (source?.type === "all") return `${root}/all`;
+    return root;
   })();
 
   $: blogUrl = absoluteUrl(profile?.blog);
@@ -276,8 +284,8 @@
     {#if populated}
     {#if hasTraffic}
       <div class="view-tabs" role="tablist" aria-label="Catalog view">
-        <button type="button" class="view-tab" role="tab" id="tab-catalog" aria-controls="projects" aria-selected={view === "catalog"} on:click={() => (view = "catalog")}>Catalog</button>
-        <button type="button" class="view-tab" role="tab" id="tab-charts" aria-controls="panel-charts" aria-selected={view === "charts"} on:click={() => (view = "charts")}>Charts</button>
+        <a class="view-tab" role="tab" id="tab-catalog" aria-controls="projects" aria-selected={view === "catalog"} href={basePath} use:inertia>Catalog</a>
+        <a class="view-tab" role="tab" id="tab-charts" aria-controls="panel-charts" aria-selected={view === "charts"} href={`${basePath}/charts`} use:inertia>Charts</a>
       </div>
     {/if}
     {#if view === "catalog" || !hasTraffic}

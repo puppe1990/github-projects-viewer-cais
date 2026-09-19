@@ -25,54 +25,83 @@ func NewHomeHandler(site meta.Site, i *inertia.Inertia, loader *catalog.Loader) 
 	return &HomeHandler{site: site, inertia: i, loader: loader}
 }
 
+const (
+	viewCatalog = "catalog"
+	viewCharts  = "charts"
+)
+
 func (h *HomeHandler) Index(w http.ResponseWriter, r *http.Request) {
-	h.render(w, r, catalog.Snapshot{}, "", "", false)
+	h.render(w, r, catalog.Snapshot{}, "", "", false, viewCatalog)
 }
 
 func (h *HomeHandler) Show(w http.ResponseWriter, r *http.Request, login string) {
+	h.showUser(w, r, login, viewCatalog)
+}
+
+func (h *HomeHandler) ShowCharts(w http.ResponseWriter, r *http.Request, login string) {
+	h.showUser(w, r, login, viewCharts)
+}
+
+func (h *HomeHandler) showUser(w http.ResponseWriter, r *http.Request, login, view string) {
 	login = normalizeLogin(login)
 	if login == "" {
-		h.render(w, r, catalog.Snapshot{}, "", "Type a GitHub username to open their catalog.", false)
+		h.render(w, r, catalog.Snapshot{}, "", "Type a GitHub username to open their catalog.", false, view)
 		return
 	}
 	snap, err := h.loader.User(r.Context(), login)
 	if err != nil {
-		h.render(w, r, catalog.Snapshot{}, login, catalogError(err), false)
+		h.render(w, r, catalog.Snapshot{}, login, catalogError(err), false, view)
 		return
 	}
-	h.render(w, r, snap, login, "", true)
+	h.render(w, r, snap, login, "", true, view)
 }
 
 func (h *HomeHandler) ShowAll(w http.ResponseWriter, r *http.Request, login string) {
+	h.showAll(w, r, login, viewCatalog)
+}
+
+func (h *HomeHandler) ShowAllCharts(w http.ResponseWriter, r *http.Request, login string) {
+	h.showAll(w, r, login, viewCharts)
+}
+
+func (h *HomeHandler) showAll(w http.ResponseWriter, r *http.Request, login, view string) {
 	login = normalizeLogin(login)
 	if login == "" {
-		h.render(w, r, catalog.Snapshot{}, "", "Type a GitHub username to open their catalog.", false)
+		h.render(w, r, catalog.Snapshot{}, "", "Type a GitHub username to open their catalog.", false, view)
 		return
 	}
 	snap, err := h.loader.All(r.Context(), login)
 	if err != nil {
-		h.render(w, r, catalog.Snapshot{}, login, catalogError(err), false)
+		h.render(w, r, catalog.Snapshot{}, login, catalogError(err), false, view)
 		return
 	}
-	h.render(w, r, snap, login, "", true)
+	h.render(w, r, snap, login, "", true, view)
 }
 
 func (h *HomeHandler) ShowOrg(w http.ResponseWriter, r *http.Request, login, org string) {
+	h.showOrg(w, r, login, org, viewCatalog)
+}
+
+func (h *HomeHandler) ShowOrgCharts(w http.ResponseWriter, r *http.Request, login, org string) {
+	h.showOrg(w, r, login, org, viewCharts)
+}
+
+func (h *HomeHandler) showOrg(w http.ResponseWriter, r *http.Request, login, org, view string) {
 	login = normalizeLogin(login)
 	org = normalizeLogin(org)
 	if login == "" || org == "" {
-		h.render(w, r, catalog.Snapshot{}, login, "Type a GitHub username to open their catalog.", false)
+		h.render(w, r, catalog.Snapshot{}, login, "Type a GitHub username to open their catalog.", false, view)
 		return
 	}
 	snap, err := h.loader.Org(r.Context(), login, org)
 	if err != nil {
-		h.render(w, r, catalog.Snapshot{}, login, catalogError(err), false)
+		h.render(w, r, catalog.Snapshot{}, login, catalogError(err), false, view)
 		return
 	}
-	h.render(w, r, snap, login, "", true)
+	h.render(w, r, snap, login, "", true, view)
 }
 
-func (h *HomeHandler) render(w http.ResponseWriter, r *http.Request, snap catalog.Snapshot, lookup, errMsg string, populated bool) {
+func (h *HomeHandler) render(w http.ResponseWriter, r *http.Request, snap catalog.Snapshot, lookup, errMsg string, populated bool, view string) {
 	props := inertia.Props{
 		"title":     "Projects Viewer",
 		"site":      meta.ForRequest(h.site, r),
@@ -83,6 +112,7 @@ func (h *HomeHandler) render(w http.ResponseWriter, r *http.Request, snap catalo
 		"error":     errMsg,
 		"populated": populated,
 		"lookup":    lookup,
+		"view":      view,
 	}
 	if snap.Orgs == nil {
 		props["orgs"] = []catalog.Org{}
