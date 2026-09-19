@@ -2,6 +2,7 @@
   import { formatCount } from "../lib/format.js";
   import {
     catalogTrafficTotals,
+    cutUnsettledDays,
     dailyCatalogPulse,
     pulseBars,
     quietStarsRank,
@@ -17,7 +18,7 @@
   $: totals = catalogTrafficTotals(repos);
   $: visitors = rankTraffic(repos, "view_uniques", 10);
   $: cloners = rankTraffic(repos, "clone_uniques", 10);
-  $: pulse = pulseBars(dailyCatalogPulse(repos));
+  $: pulse = pulseBars(cutUnsettledDays(dailyCatalogPulse(repos)));
   $: languages = uniqueVisitorsByLanguage(repos);
   $: quiet = quietStarsRank(repos).map((row) => ({
     ...row,
@@ -62,7 +63,7 @@
       <section class="chart-panel chart-panel-wide" aria-labelledby="chart-pulse">
         <header class="chart-head">
           <h3 id="chart-pulse">Last 14 days</h3>
-          <p>Unique visitors and cloners summed across this catalog.</p>
+          <p>Unique visitors and cloners summed across this catalog. GitHub settles traffic with a ~1–2 day delay, so the newest days appear once they are final.</p>
         </header>
         <div class="pulse-chart">
           {#each pulse as day}

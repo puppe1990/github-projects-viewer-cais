@@ -75,6 +75,15 @@ export function dailyCatalogPulse(repos) {
   return fillDaySpan(rows);
 }
 
+// GitHub finalizes a traffic day roughly 36h after it closes, so the newest
+// buckets come back empty or partial. Hide them so the pulse ends on settled data.
+const SETTLE_HOURS = 36;
+
+export function cutUnsettledDays(days, now = new Date(), settleHours = SETTLE_HOURS) {
+  const cutoff = now.getTime() - settleHours * 3600 * 1000;
+  return (days || []).filter((day) => Date.parse(`${day.date}T00:00:00Z`) <= cutoff);
+}
+
 function pulseHeight(value, peak) {
   if (value <= 0) return "0%";
   return `${Math.max(6, Math.round((value / peak) * 100))}%`;
