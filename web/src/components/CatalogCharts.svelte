@@ -7,6 +7,7 @@
     pulseBars,
     quietStarsRank,
     rankTraffic,
+    trafficFreshness,
     trafficRepos,
     uniqueVisitorsByLanguage,
   } from "../lib/trafficCharts.js";
@@ -18,7 +19,9 @@
   $: totals = catalogTrafficTotals(repos);
   $: visitors = rankTraffic(repos, "view_uniques", 10);
   $: cloners = rankTraffic(repos, "clone_uniques", 10);
-  $: pulse = pulseBars(cutUnsettledDays(dailyCatalogPulse(repos)));
+  $: pulseDays = dailyCatalogPulse(repos);
+  $: freshness = trafficFreshness(pulseDays);
+  $: pulse = pulseBars(cutUnsettledDays(pulseDays));
   $: languages = uniqueVisitorsByLanguage(repos);
   $: quiet = quietStarsRank(repos).map((row) => ({
     ...row,
@@ -64,6 +67,15 @@
         <header class="chart-head">
           <h3 id="chart-pulse">Last 14 days</h3>
           <p>Unique visitors and cloners summed across this catalog. GitHub settles traffic with a ~1–2 day delay, so the newest days appear once they are final.</p>
+          <p class="chart-freshness" class:is-stale={freshness.stale} class:is-empty={!freshness.lastDay}>
+            {#if !freshness.lastDay}
+              No traffic recorded in this window yet.
+            {:else if freshness.stale}
+              GitHub has not published new traffic since {freshness.label} ({freshness.daysBehind} days behind).
+            {:else}
+              Data through {freshness.label}.
+            {/if}
+          </p>
         </header>
         <div class="pulse-chart">
           {#each pulse as day}

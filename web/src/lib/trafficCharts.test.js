@@ -6,6 +6,7 @@ import {
   pulseBars,
   quietStarsRank,
   rankTraffic,
+  trafficFreshness,
   trafficRepos,
   uniqueVisitorsByLanguage,
 } from "./trafficCharts.js";
@@ -145,6 +146,41 @@ describe("cutUnsettledDays", () => {
   test("returns an empty list when every day is unsettled", () => {
     const fresh = [{ date: "2026-09-19", viewUniques: 1, cloneUniques: 0 }];
     expect(cutUnsettledDays(fresh, new Date("2026-09-19T03:00:00Z"))).toEqual([]);
+  });
+});
+
+describe("trafficFreshness", () => {
+  const pulse = [
+    { date: "2026-09-21", viewUniques: 4, cloneUniques: 3 },
+    { date: "2026-09-22", viewUniques: 0, cloneUniques: 0 },
+    { date: "2026-09-23", viewUniques: 2, cloneUniques: 0 },
+    { date: "2026-09-24", viewUniques: 0, cloneUniques: 0 },
+    { date: "2026-09-25", viewUniques: 0, cloneUniques: 0 },
+  ];
+
+  test("reports the newest day with recorded traffic", () => {
+    expect(trafficFreshness(pulse, new Date("2026-09-25T12:00:00Z"))).toEqual({
+      lastDay: "2026-09-23",
+      label: "Sep 23",
+      daysBehind: 2,
+      stale: false,
+    });
+  });
+
+  test("flags a lagging feed once the gap passes the settle delay", () => {
+    const report = trafficFreshness(pulse, new Date("2026-09-28T12:00:00Z"));
+    expect(report.daysBehind).toBe(5);
+    expect(report.stale).toBe(true);
+  });
+
+  test("reports no active day when the window is all zeroes", () => {
+    const quiet = [{ date: "2026-09-25", viewUniques: 0, cloneUniques: 0 }];
+    expect(trafficFreshness(quiet, new Date("2026-09-26T12:00:00Z"))).toEqual({
+      lastDay: null,
+      label: "",
+      daysBehind: null,
+      stale: false,
+    });
   });
 });
 
