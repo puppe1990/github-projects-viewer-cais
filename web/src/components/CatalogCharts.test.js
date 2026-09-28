@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/svelte";
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import CatalogCharts from "./CatalogCharts.svelte";
 
 const repos = [
@@ -66,5 +66,27 @@ describe("CatalogCharts", () => {
     const pulse = screen.getByRole("region", { name: "Last 14 days" });
     expect(within(pulse).getByTitle("8 unique visitors")).toBeInTheDocument();
     expect(within(pulse).getByTitle("1 unique cloner")).toBeInTheDocument();
+  });
+});
+
+describe("CatalogCharts freshness", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("reports the newest traffic day in the pulse", () => {
+    vi.setSystemTime(new Date("2026-08-29T12:00:00Z"));
+    render(CatalogCharts, { props: { repos } });
+    expect(screen.getByText("Data through Aug 27.")).toBeInTheDocument();
+  });
+
+  test("warns when GitHub lags past the settle delay", () => {
+    vi.setSystemTime(new Date("2026-08-30T12:00:00Z"));
+    render(CatalogCharts, { props: { repos } });
+    expect(screen.getByText("GitHub has not published new traffic since Aug 27 (3 days behind).")).toBeInTheDocument();
   });
 });

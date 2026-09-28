@@ -1340,6 +1340,32 @@ a.stat:hover {
   color: var(--ink-mute);
 }
 
+.chart-freshness {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chart-freshness::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--moss);
+}
+
+.chart-freshness.is-stale {
+  color: var(--copper-hot);
+}
+
+.chart-freshness.is-stale::before {
+  background: var(--copper);
+}
+
+.chart-freshness.is-empty::before {
+  background: var(--ink-mute);
+}
+
 .rank-list {
   list-style: none;
   margin: 0;

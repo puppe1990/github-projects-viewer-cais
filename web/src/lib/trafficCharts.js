@@ -89,17 +89,34 @@ function pulseHeight(value, peak) {
   return `${Math.max(6, Math.round((value / peak) * 100))}%`;
 }
 
+function utcDayLabel(date) {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function pulseBars(days) {
   const peak = Math.max(1, ...(days || []).flatMap((day) => [day.viewUniques, day.cloneUniques]));
-  return (days || []).map((day) => {
-    const utc = new Date(`${day.date}T00:00:00Z`);
-    return {
-      ...day,
-      label: utc.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
-      viewHeight: pulseHeight(day.viewUniques, peak),
-      cloneHeight: pulseHeight(day.cloneUniques, peak),
-    };
-  });
+  return (days || []).map((day) => ({
+    ...day,
+    label: utcDayLabel(day.date),
+    viewHeight: pulseHeight(day.viewUniques, peak),
+    cloneHeight: pulseHeight(day.cloneUniques, peak),
+  }));
+}
+
+// GitHub can lag beyond its usual ~1-2 day settle, and the pulse then freezes
+// silently; report the newest active day so the chart can show the real delay.
+const FRESHNESS_LAG_DAYS = 2;
+
+export function trafficFreshness(days, now = new Date(), lagDays = FRESHNESS_LAG_DAYS) {
+  const lastDay = (days || []).findLast((day) => (day.viewUniques || 0) + (day.cloneUniques || 0) > 0);
+  if (!lastDay) return { lastDay: null, label: "", daysBehind: null, stale: false };
+  const today = Date.parse(`${now.toISOString().slice(0, 10)}T00:00:00Z`);
+  const daysBehind = Math.round((today - Date.parse(`${lastDay.date}T00:00:00Z`)) / 864e5);
+  return { lastDay: lastDay.date, label: utcDayLabel(lastDay.date), daysBehind, stale: daysBehind > lagDays };
 }
 
 export function uniqueVisitorsByLanguage(repos, limit = 8) {
