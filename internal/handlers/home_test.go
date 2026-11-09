@@ -152,6 +152,26 @@ func TestHomeHandler_ShowUserCatalogDefaultsToCatalogView(t *testing.T) {
 	}
 }
 
+func TestHomeHandler_ShowUserCatalogDefaultsToAllSource(t *testing.T) {
+	h := newHomeHandler(t, homeGitHub{
+		token:    true,
+		user:     githubapi.User{Login: "puppe1990", Name: "Matheus"},
+		repos:    []githubapi.Repo{{Name: "cais", FullName: "puppe1990/cais", OwnerLogin: "puppe1990"}},
+		orgs:     []githubapi.Org{{Login: "hidden-org"}},
+		orgRepos: []githubapi.Repo{{Name: "private-app", FullName: "hidden-org/private-app", OwnerLogin: "hidden-org", Private: true}},
+	})
+	rr := httptest.NewRecorder()
+	h.Show(rr, inertiaRequest(http.MethodGet, "/u/puppe1990", nil), "puppe1990")
+	source := assertInertiaProp(t, rr, "source").(map[string]any)
+	if source["type"] != catalog.SourceAll {
+		t.Fatalf("source = %#v, want type %q so All is the default catalog", source, catalog.SourceAll)
+	}
+	repos := assertInertiaProp(t, rr, "repos").([]any)
+	if len(repos) != 2 {
+		t.Fatalf("repos = %#v, want personal and org repos", repos)
+	}
+}
+
 func TestHomeHandler_ShowUserCharts(t *testing.T) {
 	h := newHomeHandler(t, homeGitHub{
 		user:  githubapi.User{Login: "octocat", Name: "The Octocat", PublicRepos: 8},
@@ -218,6 +238,42 @@ func TestHomeHandler_ShowNotFound(t *testing.T) {
 	}
 	if assertInertiaProp(t, rr, "populated") != false {
 		t.Fatal("populated should be false")
+	}
+}
+
+func TestHomeHandler_ShowPersonal(t *testing.T) {
+	h := newHomeHandler(t, homeGitHub{
+		token:    true,
+		user:     githubapi.User{Login: "puppe1990", Name: "Matheus"},
+		repos:    []githubapi.Repo{{Name: "cais", FullName: "puppe1990/cais", OwnerLogin: "puppe1990"}},
+		orgs:     []githubapi.Org{{Login: "hidden-org"}},
+		orgRepos: []githubapi.Repo{{Name: "private-app", FullName: "hidden-org/private-app", OwnerLogin: "hidden-org", Private: true}},
+	})
+	rr := httptest.NewRecorder()
+	h.ShowPersonal(rr, inertiaRequest(http.MethodGet, "/u/puppe1990/personal", nil), "puppe1990")
+	source := assertInertiaProp(t, rr, "source").(map[string]any)
+	if source["type"] != catalog.SourceUser {
+		t.Fatalf("source = %#v, want type %q", source, catalog.SourceUser)
+	}
+	repos := assertInertiaProp(t, rr, "repos").([]any)
+	if len(repos) != 1 {
+		t.Fatalf("repos = %#v, want only personal repos", repos)
+	}
+}
+
+func TestHomeHandler_ShowPersonalCharts(t *testing.T) {
+	h := newHomeHandler(t, homeGitHub{
+		user:  githubapi.User{Login: "octocat", Name: "The Octocat", PublicRepos: 8},
+		repos: []githubapi.Repo{{Name: "hello-world", Stars: 10, OwnerLogin: "octocat"}},
+	})
+	rr := httptest.NewRecorder()
+	h.ShowPersonalCharts(rr, inertiaRequest(http.MethodGet, "/u/octocat/personal/charts", nil), "octocat")
+	if assertInertiaProp(t, rr, "view") != "charts" {
+		t.Fatalf("view = %v, want charts", assertInertiaProp(t, rr, "view"))
+	}
+	source := assertInertiaProp(t, rr, "source").(map[string]any)
+	if source["type"] != catalog.SourceUser {
+		t.Fatalf("source = %#v, want type %q", source, catalog.SourceUser)
 	}
 }
 

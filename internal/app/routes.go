@@ -14,6 +14,8 @@ func registerRoutes(r *cais.Router, deps Deps, cfg cais.Config) {
 	r.Get("/u/{login}/charts", cais.StringParam("login", home.ShowCharts))
 	r.Get("/u/{login}/all", cais.StringParam("login", home.ShowAll))
 	r.Get("/u/{login}/all/charts", cais.StringParam("login", home.ShowAllCharts))
+	r.Get("/u/{login}/personal", cais.StringParam("login", home.ShowPersonal))
+	r.Get("/u/{login}/personal/charts", cais.StringParam("login", home.ShowPersonalCharts))
 	r.Get("/u/{login}/orgs/{org}", cais.StringParams("login", "org", home.ShowOrg))
 	r.Get("/u/{login}/orgs/{org}/charts", cais.StringParams("login", "org", home.ShowOrgCharts))
 	r.Get("/traffic/{owner}/{repo}", cais.StringParams("owner", "repo", home.RepoTraffic))
