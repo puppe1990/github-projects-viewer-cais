@@ -5,6 +5,7 @@ import {
   dailyCatalogPulse,
   pulseBars,
   quietStarsRank,
+  rankStars,
   rankTraffic,
   trafficFreshness,
   trafficRepos,
@@ -207,5 +208,21 @@ describe("quietStarsRank", () => {
     expect(quietStarsRank(catalog).map((row) => row.name)).toEqual(["beta", "gamma", "alpha"]);
     expect(quietStarsRank(catalog)[0].uniques).toBe(70);
     expect(quietStarsRank(catalog)[0].stars).toBe(2);
+  });
+});
+
+describe("rankStars", () => {
+  test("ranks repositories by GitHub stars including those without traffic", () => {
+    expect(rankStars(catalog).map((row) => [row.name, row.value])).toEqual([
+      ["alpha", 100],
+      ["gamma", 10],
+      ["beta", 2],
+      ["delta", 1],
+    ]);
+  });
+
+  test("keeps the repository html url on ranked star rows", () => {
+    const withUrls = catalog.map((repo) => ({ ...repo, html_url: `https://github.com/octocat/${repo.name}` }));
+    expect(rankStars(withUrls, 1)[0].href).toBe("https://github.com/octocat/alpha");
   });
 });

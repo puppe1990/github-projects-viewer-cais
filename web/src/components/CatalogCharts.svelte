@@ -6,6 +6,7 @@
     dailyCatalogPulse,
     pulseBars,
     quietStarsRank,
+    rankStars,
     rankTraffic,
     trafficFreshness,
     trafficRepos,
@@ -17,6 +18,7 @@
 
   $: tracked = trafficRepos(repos);
   $: totals = catalogTrafficTotals(repos);
+  $: stars = rankStars(repos);
   $: visitors = rankTraffic(repos, "view_uniques", 10);
   $: cloners = rankTraffic(repos, "clone_uniques", 10);
   $: pulseDays = dailyCatalogPulse(repos);
@@ -59,6 +61,7 @@
       </div>
     </div>
 
+    <RankChart title="Top stars" headingId="chart-stars" caption="GitHub stars in this catalog." rows={stars} />
     <RankChart title="Top unique visitors" headingId="chart-visitors" caption="GitHub unique visitors in the current window." rows={visitors} />
     <RankChart title="Top unique cloners" headingId="chart-cloners" caption="GitHub unique cloners in the current window." rows={cloners} tone="clones" />
 

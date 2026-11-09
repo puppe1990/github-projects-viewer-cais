@@ -31,13 +31,21 @@ const repos = [
       clone_uniques: 60,
     },
   },
-  { name: "silent", language: "Rust", stargazers_count: 1 },
+  { name: "silent", html_url: "https://github.com/puppe1990/silent", language: "Rust", stargazers_count: 1 },
 ];
 
 describe("CatalogCharts", () => {
   test("explains when the catalog has no traffic snapshots", () => {
     render(CatalogCharts, { props: { repos: [{ name: "silent" }] } });
     expect(screen.getByText(/No traffic snapshots/)).toBeInTheDocument();
+  });
+
+  test("shows top stars across the catalog", () => {
+    render(CatalogCharts, { props: { repos } });
+    const stars = screen.getByRole("region", { name: "Top stars" });
+    expect(within(stars).getByRole("link", { name: "atlas" })).toHaveAttribute("href", "https://github.com/puppe1990/atlas");
+    expect(within(stars).getByText("40")).toBeInTheDocument();
+    expect(within(stars).getByRole("link", { name: "silent" })).toBeInTheDocument();
   });
 
   test("shows top unique visitors and unique cloners", () => {
