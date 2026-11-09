@@ -135,6 +135,20 @@ export function uniqueVisitorsByLanguage(repos, limit = 8) {
   return withShare(head, (row) => row.value);
 }
 
+export function rankStars(repos, limit = 10) {
+  const rows = (repos || [])
+    .map((repo) => ({
+      name: repo.name,
+      href: repo.html_url || "",
+      language: repo.language || "Not specified",
+      value: Number(repo.stargazers_count) || 0,
+    }))
+    .filter((row) => row.value > 0)
+    .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name))
+    .slice(0, limit);
+  return withShare(rows, (row) => row.value);
+}
+
 export function quietStarsRank(repos, limit = 10) {
   const rows = trafficRepos(repos)
     .map((repo) => {
