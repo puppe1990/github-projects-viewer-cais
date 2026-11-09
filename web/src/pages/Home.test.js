@@ -21,6 +21,13 @@ describe("Home", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Look up" }));
     expect(screen.getByRole("status", { name: /Reading the public graph/ })).toBeInTheDocument();
     expect(document.querySelector(".atlas-spinner")).toBeInTheDocument();
+    expect(router.get).toHaveBeenCalledWith("/u/octocat", {}, expect.any(Object));
+  });
+
+  test("opens a username hint on the combined All catalog", async () => {
+    render(Home, { props: { populated: false, repos: [], orgs: [], profile: {}, source: {}, error: "" } });
+    await fireEvent.click(screen.getByRole("button", { name: "sindresorhus" }));
+    expect(router.get).toHaveBeenCalledWith("/u/sindresorhus", {}, expect.any(Object));
   });
 
   test("renders a populated profile and repo card", () => {
@@ -104,6 +111,24 @@ describe("Home", () => {
     expect(router.get).toHaveBeenCalledWith("/u/puppe1990/all", {}, expect.any(Object));
   });
 
+  test("Personal chip opens the personal catalog", async () => {
+    render(Home, {
+      props: {
+        populated: true,
+        lookup: "puppe1990",
+        profile: { login: "puppe1990", name: "Matheus", html_url: "https://github.com/puppe1990", avatar_url: "https://example.com/a.png", public_repos: 8, followers: 1, following: 1 },
+        orgs: [{ login: "hidden-org", avatar_url: "https://example.com/h.png" }],
+        source: { type: "user", login: "puppe1990" },
+        repos: [{ name: "cais", html_url: "https://github.com/puppe1990/cais", stargazers_count: 1, forks_count: 0, language: "Go", description: "demo", updated_at: "2026-08-01T00:00:00Z" }],
+        error: "",
+      },
+    });
+    const personalChip = screen.getByRole("button", { name: /Personal/ });
+    expect(personalChip).toHaveAttribute("aria-pressed", "true");
+    await fireEvent.click(personalChip);
+    expect(router.get).toHaveBeenCalledWith("/u/puppe1990/personal", {}, expect.any(Object));
+  });
+
   const trafficHomeProps = {
     populated: true,
     lookup: "octocat",
@@ -129,8 +154,8 @@ describe("Home", () => {
     render(Home, { props: trafficHomeProps });
     const catalog = screen.getByRole("tab", { name: "Catalog" });
     const charts = screen.getByRole("tab", { name: "Charts" });
-    expect(catalog).toHaveAttribute("href", "/u/octocat");
-    expect(charts).toHaveAttribute("href", "/u/octocat/charts");
+    expect(catalog).toHaveAttribute("href", "/u/octocat/personal");
+    expect(charts).toHaveAttribute("href", "/u/octocat/personal/charts");
     expect(catalog).toHaveAttribute("aria-selected", "true");
     expect(charts).toHaveAttribute("aria-selected", "false");
     expect(screen.getByRole("tabpanel", { name: "Catalog" })).toBeInTheDocument();

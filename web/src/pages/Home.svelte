@@ -87,7 +87,7 @@
       go(`/u/${encodeURIComponent(profile.login)}/all`);
       return;
     }
-    go(`/u/${encodeURIComponent(profile.login)}`);
+    go(`/u/${encodeURIComponent(profile.login)}/personal`);
   }
 
   $: resultsMeta = (() => {
@@ -109,7 +109,7 @@
     const root = `/u/${encodeURIComponent(login)}`;
     if (source?.type === "org" && source?.login) return `${root}/orgs/${encodeURIComponent(source.login)}`;
     if (source?.type === "all") return `${root}/all`;
-    return root;
+    return `${root}/personal`;
   })();
 
   $: blogUrl = absoluteUrl(profile?.blog);

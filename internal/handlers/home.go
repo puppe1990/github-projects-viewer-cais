@@ -35,10 +35,18 @@ func (h *HomeHandler) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HomeHandler) Show(w http.ResponseWriter, r *http.Request, login string) {
-	h.showUser(w, r, login, viewCatalog)
+	h.showAll(w, r, login, viewCatalog)
 }
 
 func (h *HomeHandler) ShowCharts(w http.ResponseWriter, r *http.Request, login string) {
+	h.showAll(w, r, login, viewCharts)
+}
+
+func (h *HomeHandler) ShowPersonal(w http.ResponseWriter, r *http.Request, login string) {
+	h.showUser(w, r, login, viewCatalog)
+}
+
+func (h *HomeHandler) ShowPersonalCharts(w http.ResponseWriter, r *http.Request, login string) {
 	h.showUser(w, r, login, viewCharts)
 }
 
