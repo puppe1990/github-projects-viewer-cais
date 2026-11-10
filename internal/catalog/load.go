@@ -83,28 +83,7 @@ func (l *Loader) All(ctx context.Context, login string) (Snapshot, error) {
 		seen[key] = true
 	}
 	for _, org := range userSnap.Orgs {
-		raw, orgErr := l.GitHub.OrgRepos(ctx, org.Login)
-		if orgErr != nil {
-			cached, cacheErr := l.Cache.LoadRepos(org.Login, SourceOrg)
-			if cacheErr != nil || len(cached) == 0 {
-				continue
-			}
-			for _, repo := range cached {
-				key := repo.FullName
-				if key == "" {
-					key = repo.OwnerLogin + "/" + repo.Name
-				}
-				if seen[key] {
-					continue
-				}
-				seen[key] = true
-				combined = append(combined, repo)
-			}
-			continue
-		}
-		mapped := ReposFromGitHub(raw)
-		_ = l.Cache.SaveRepos(org.Login, SourceOrg, mapped, l.now())
-		for _, repo := range mapped {
+		for _, repo := range l.orgRepos(ctx, org.Login) {
 			key := repo.FullName
 			if key == "" {
 				key = repo.OwnerLogin + "/" + repo.Name
@@ -124,6 +103,23 @@ func (l *Loader) All(ctx context.Context, login string) (Snapshot, error) {
 		SourceLogin: login,
 	}
 	return l.withTraffic(ctx, snap)
+}
+
+func (l *Loader) orgRepos(ctx context.Context, orgLogin string) []Repo {
+	cached, cacheErr := l.Cache.LoadRepos(orgLogin, SourceOrg)
+	if cacheErr == nil && len(cached) > 0 {
+		return cached
+	}
+	raw, orgErr := l.GitHub.OrgRepos(ctx, orgLogin)
+	if orgErr != nil {
+		if cacheErr == nil {
+			return cached
+		}
+		return nil
+	}
+	mapped := ReposFromGitHub(raw)
+	_ = l.Cache.SaveRepos(orgLogin, SourceOrg, mapped, l.now())
+	return mapped
 }
 
 func (l *Loader) Org(ctx context.Context, userLogin, orgLogin string) (Snapshot, error) {
