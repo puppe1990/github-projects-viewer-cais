@@ -12,17 +12,19 @@ import (
 )
 
 type fakeGitHub struct {
-	user       githubapi.User
-	repos      []githubapi.Repo
-	orgs       []githubapi.Org
-	orgRepos   []githubapi.Repo
-	traffic    githubapi.Traffic
-	userErr    error
-	reposErr   error
-	trafficErr error
-	token      bool
-	users      int
-	trafficN   int
+	user        githubapi.User
+	repos       []githubapi.Repo
+	orgs        []githubapi.Org
+	orgRepos    []githubapi.Repo
+	traffic     githubapi.Traffic
+	userErr     error
+	reposErr    error
+	orgReposErr error
+	trafficErr  error
+	token       bool
+	users       int
+	orgReposN   int
+	trafficN    int
 }
 
 func (f *fakeGitHub) HasToken() bool { return f.token }
@@ -42,7 +44,8 @@ func (f *fakeGitHub) UserOrgs(context.Context, string) ([]githubapi.Org, error) 
 	return f.orgs, nil
 }
 func (f *fakeGitHub) OrgRepos(context.Context, string) ([]githubapi.Repo, error) {
-	return f.orgRepos, nil
+	f.orgReposN++
+	return f.orgRepos, f.orgReposErr
 }
 func (f *fakeGitHub) Traffic(context.Context, string, string) (githubapi.Traffic, error) {
 	f.trafficN++
@@ -342,6 +345,39 @@ func TestLoader_All_CombinesPersonalAndOrgRepos(t *testing.T) {
 	}
 	if len(snap.Repos) != 2 {
 		t.Fatalf("repos = %+v", snap.Repos)
+	}
+}
+
+func TestLoader_All_UsesCachedOrgReposWithoutGitHub(t *testing.T) {
+	gh := &fakeGitHub{
+		user:     githubapi.User{Login: "puppe1990", Name: "Matheus"},
+		repos:    []githubapi.Repo{{Name: "cais", FullName: "puppe1990/cais", OwnerLogin: "puppe1990"}},
+		orgs:     []githubapi.Org{{Login: "hidden-org"}},
+		orgRepos: []githubapi.Repo{{Name: "private-app", FullName: "hidden-org/private-app", OwnerLogin: "hidden-org", Private: true}},
+	}
+	loader, _ := testLoader(t, gh, &fakeQueue{})
+	if _, err := loader.All(context.Background(), "puppe1990"); err != nil {
+		t.Fatal(err)
+	}
+	if gh.orgReposN != 1 {
+		t.Fatalf("first All org fetches = %d, want 1", gh.orgReposN)
+	}
+
+	gh.orgRepos = []githubapi.Repo{{Name: "should-not-appear", FullName: "hidden-org/should-not-appear", OwnerLogin: "hidden-org"}}
+	snap, err := loader.All(context.Background(), "puppe1990")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gh.orgReposN != 1 {
+		t.Fatalf("cached All org fetches = %d, want 1 (cache hit)", gh.orgReposN)
+	}
+	if len(snap.Repos) != 2 {
+		t.Fatalf("repos = %+v", snap.Repos)
+	}
+	for _, repo := range snap.Repos {
+		if repo.Name == "should-not-appear" {
+			t.Fatal("used live GitHub org repos instead of cache")
+		}
 	}
 }
 
